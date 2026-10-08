@@ -121,7 +121,7 @@ seedTabAuth();
 function botsCacheKey(plat){
   return 'gb.dashboard.bots.'+(readUser()||'-')+'.'+(plat||activeTab||'binance')
 }
-let expandedBot=null,recognition=null;
+let expandedBot=null;
 let activeTab=readDesk();
 let bots=(function(){
   try{return JSON.parse(sessionStorage.getItem(botsCacheKey(activeTab))||'[]')||[]}
@@ -619,6 +619,10 @@ window.toggleSet=function(el){
   var sec=el.closest('.set-section');
   if(sec)sec.classList.toggle('collapsed')
 };
+window.toggleTun=function(btn){
+  var sec=btn.closest('.tun-sec');
+  if(sec)sec.classList.toggle('open')
+};
 
 window.saveBinanceKeys=async function(){
   var payload={
@@ -835,210 +839,6 @@ async function renderAccountsBar(){
 function fmt(n){return Number(n||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2})}
 function inr(n){return Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:0})}
 
-// ── Voice acknowledgment — 100 short responses ───────────────────────────
-var ACK_PHRASES=(function(){
-  var pool=[
-    "Sure","On it","Got it","Alright","Okay","Done","Let me check","Coming right up","One sec","Working on it",
-    "Absolutely","You got it","Consider it done","Right away","No problem","Easy","On it now","Just a moment","Give me a sec","Roger that",
-    "Copy that","Will do","Sure thing","Sounds good","Perfect","Great","Understood","Okay then","Alrighty","Let's do it",
-    "Checking now","Looking into it","Fetching that","Pulling that up","Hang tight","Bear with me","Almost there","Just a tick","Give me a beat","Starting now",
-    "Diving in","Getting on it","Processing that","Let me see","Right up","In a flash","Quickly now","As you wish","Certainly","Indeed",
-    "Fine","Very well","Acknowledged","Noted","Understood","Gotcha","Ten four","Yes indeed","Okay dokey","Right then",
-    "Let me handle that","I'll take care of it","That's easy","Way ahead of you","Already on it","No worries","All good","Happy to","Sure can","You bet",
-    "Absolutely right","Spot on","Exactly","Perfect timing","Alright let's go","Off we go","Here we go","Ready when you are","Going now","Now fetching",
-    "Let me check that","Give me a moment","Right on it","At your service","Just for you","Say no more","Understood got it","Makes sense","Good call","Let's get it",
-    "On the ball","Quick as can be","Zip zip","Voila coming","Seconds away","Brb","Moment please","Tick tock","Fast as lightning","Here we come"
-  ];
-  // Fisher-Yates shuffle
-  for(var i=pool.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=pool[i];pool[i]=pool[j];pool[j]=t}
-  return pool
-})();
-var _ackIdx=0;
-
-// Pick the most natural available voice: macOS Natural/Enhanced/Premium first,
-// then Google/neural voices, then any English voice.
-var _bestVoice=null;
-function pickVoice(){
-  var voices=window.speechSynthesis.getVoices();
-  if(!voices||!voices.length)return null;
-  // Warm cache only once available
-  function eng(v){return v.lang&&v.lang.toLowerCase().indexOf('en')===0}
-  function score(v){
-    if(!eng(v))return -1;
-    var n=(v.name||'');
-    var s=0;
-    if(/natural|enhanced|premium|premium_quality/i.test(n))s=30;
-    if(/zoe|aria|jenny|aaron|samantha|juan|graciela|michelle|sonia/i.test(n))s+=12;
-    if(v.localService)s+=8;
-    if(/nao|kai|zira|david|catherine/i.test(n))s-=10;
-    return s
-  }
-  var ranked=voices.slice().sort(function(a,b){return score(b)-score(a)});
-  _bestVoice=ranked[0]&&score(ranked[0])>=0?ranked[0]:null;
-  if(!_bestVoice)return null;
-  return _bestVoice
-}
-if(window.speechSynthesis){
-  pickVoice();
-  window.speechSynthesis.onvoiceschanged=function(){pickVoice()}
-}
-
-// ── Kokoro neural audio player (primary) with macOS speechSynthesis fallback ──
-// Uses AudioContext so playback isn't blocked by autoplay policy on HTTP origins.
-var _actx=null,_curSrc=null;
-function ensureCtx(){
-  if(!_actx){var AC=window.AudioContext||window.webkitAudioContext;if(AC){try{_actx=new AC()}catch(e){_actx=null}}}
-  if(_actx&&_actx.state==='suspended')_actx.resume().catch(function(){});
-  return _actx
-}
-// Unlock audio on first user gesture (required on HTTP origins)
-['pointerdown','touchstart','keydown'].forEach(function(ev){
-  document.addEventListener(ev,function(){ensureCtx()},{once:false})
-});
-function stopAudio(){
-  window.speechSynthesis.cancel();
-  if(_curSrc){try{_curSrc.stop()}catch(e){}try{_curSrc.disconnect()}catch(e){}_curSrc=null}
-}
-function playWav(url,cb){
-  // cb(ok, httpErr): httpErr=true means the request/server failed (sound is
-  // unavailable), while ok=false without httpErr is a transient playback
-  // issue (autoplay/decode) that a later user gesture can resolve.
-  fetch(url,{headers:adminHeaders()}).then(function(r){
-    if(!r.ok)return cb&&cb(false,true);
-    return r.arrayBuffer().then(function(buf){
-      if(!buf||!buf.byteLength)return cb&&cb(false);
-      ensureCtx();
-      if(!_actx)return cb&&cb(false);
-      return _actx.decodeAudioData(buf).then(function(ab){
-        stopAudio();
-        var src=_actx.createBufferSource();
-        src.buffer=ab;src.connect(_actx.destination);
-        src.onended=function(){_curSrc=null;cb&&cb(true)};
-        _curSrc=src;
-        src.start()
-      }).catch(function(){cb&&cb(false)})
-    }).catch(function(){cb&&cb(false,true)})
-  }).catch(function(){cb&&cb(false,true)})
-}
-// Play an already-decoded AudioBuffer (start returns false if it couldn't).
-function playBuffer(ab,onEnd){
-  ensureCtx();
-  if(!_actx){onEnd&&onEnd();return false}
-  stopAudio();
-  var src=_actx.createBufferSource();
-  src.buffer=ab;src.connect(_actx.destination);
-  src.onended=function(){_curSrc=null;onEnd&&onEnd()};
-  _curSrc=src;
-  try{src.start()}catch(e){onEnd&&onEnd();return false}
-  return true
-}
-// Fetch + decode without playing — used to queue sentence audio during streaming.
-function prefetchWav(url,cb){
-  fetch(url,{headers:adminHeaders()}).then(function(r){
-    if(!r.ok)return cb&&cb(false,null,true);
-    return r.arrayBuffer()
-  }).then(function(buf){
-    if(!buf||!buf.byteLength)return cb&&cb(false,null,false);
-    ensureCtx();
-    if(!_actx)return cb&&cb(false,null,false);
-    _actx.decodeAudioData(buf).then(function(ab){cb&&cb(true,ab,false)})
-      .catch(function(){cb&&cb(false,null,false)})
-  }).catch(function(){cb&&cb(false,null,true)})
-}
-var _kokoroFailStreak=0,_kokoroCooldown=0;
-// Cooldown scheme: fall back to speechSynthesis on any failure, but only back
-// off Kokoro after 3 consecutive *HTTP* failures (really down), and re-enable
-// after 2 min so a transient outage never leaves the old voice stuck forever.
-function kokoroOn(){return Date.now()>_kokoroCooldown}
-function kokoroSpeak(text){
-  if(!kokoroOn()){speakUtterance(text,0.9,1.05);return}
-  playWav(ttsUrl(text),function(ok,httpErr){
-    if(ok)return;
-    if(httpErr&&++_kokoroFailStreak>=3){_kokoroFailStreak=0;_kokoroCooldown=Date.now()+120000}
-    speakUtterance(text,0.9,1.05)
-  })
-}
-function speakUtterance(text,rate,pitch){
-  var u=new SpeechSynthesisUtterance(text);
-  u.lang='en-US';u.rate=rate;u.pitch=pitch;
-  var preferred=pickVoice();
-  if(preferred)u.voice=preferred;
-  window.speechSynthesis.speak(u)
-}
-// Clean raw answer text to plain speakable words.
-function cleanText(t){
-  return t.replace(/<[^>]+>/g,' ').replace(/\|[-:\s|]+\|/g,' ').replace(/\|/g,' ')
-    .replace(/```[\s\S]*?```/g,' ').replace(/[*_~#>]/g,' ').replace(/https?:\/\/\S+/g,' ')
-    .replace(/[^\w\s.,!?\'\"-]/g,' ').replace(/\s+/g,' ').trim()
-}
-// Complete sentences (terminal punctuation reached), up to 3, each ending '.'.
-// Pass trailing=true to also include a final unpunctuated chunk (finished text).
-function completeSentences(t,trailing){
-  var parts=cleanText(t).split(/[.!?]+/),out=[],upto=trailing?parts.length:parts.length-1;
-  for(var i=0;i<upto;i++){
-    var p=parts[i].replace(/^\s+|\s+$/g,'');
-    if(p.length>10)out.push(p+'.')
-  }
-  return out.slice(0,3)
-}
-function speakText(t){return completeSentences(t,true).join(' ')}
-// Sentence audio prefetched as the answer streams, played back-to-back so the
-// voice reads along with the text instead of one big 3-5s wait at the end.
-var _sentQ=[];
-function playQueued(){
-  var item=_sentQ[0];
-  if(!item)return;
-  if(item.buf){_sentQ.shift();playBuffer(item.buf,playQueued);return}
-  // Prefetch still in-flight — give it a moment, then synth on demand.
-  if((item._tries=(item._tries||0)+1)<60){setTimeout(playQueued,100);return}
-  _sentQ.shift();
-  playWav(ttsUrl(item.text),function(ok,httpErr){
-    if(httpErr&&++_kokoroFailStreak>=3){_kokoroFailStreak=0;_kokoroCooldown=Date.now()+120000}
-    if(!ok)speakUtterance(item.text,0.9,1.05);
-    playQueued()
-  })
-}
-window.speakQueued=function(ft){
-  if(_curSrc||window.speechSynthesis.speaking){stopAudio();return}
-  if(!_sentQ.length){var c=speakText(ft);if(c)kokoroSpeak(c);return}
-  // Make sure a final unpunctuated tail (if any) is queued too.
-  var fin=completeSentences(ft,true);
-  while(_sentQ.length<fin.length){
-    var s=fin[_sentQ.length];if(!s)break;
-    var item={text:s,buf:null};
-    _sentQ.push(item);
-    (function(it){prefetchWav(ttsUrl(it.text),function(ok,ab,bad){
-      if(ok&&ab)it.buf=ab;
-      else if(bad&&++_kokoroFailStreak>=3){_kokoroFailStreak=0;_kokoroCooldown=Date.now()+120000}
-    })})(item)
-  }
-  playQueued()
-}
-var VOICE=localStorage.getItem('gb_voice')||'af_heart';
-function ttsUrl(text){return API+'/api/tts?text='+encodeURIComponent(text)+'&voice='+encodeURIComponent(VOICE)}
-function ackUrl(i){return API+'/api/acks?i='+i+'&voice='+encodeURIComponent(VOICE)}
-function speakAck(){
-  var phrase=ACK_PHRASES[_ackIdx];
-  _ackIdx=(_ackIdx+1)%ACK_PHRASES.length;
-  if(kokoroOn()){
-    // Backend pre-synthesizes the first handful of acks (per voice) — instant.
-    var i=_ackIdx%30;
-    playWav(ackUrl(i),function(ok,httpErr){
-      if(ok)return;
-      if(httpErr&&++_kokoroFailStreak>=3){_kokoroFailStreak=0;_kokoroCooldown=Date.now()+120000}
-      speakUtterance(phrase,1.0,1.0);
-      toast('🎙 "'+phrase+'"','success')
-    });
-    return
-  }
-  speakUtterance(phrase,1.0,1.0);
-  toast('🎙 "'+phrase+'"','success')
-}
-
-function speakError(msg){
-  kokoroSpeak(msg)
-}
-
 // ── Streaming indicator — animated border + thinking text ─────────────────
 function startStreaming(el){
   var dots=['','·','··','···','····','···','··','·'],i=0;
@@ -1167,101 +967,10 @@ function renderBotList(){
   }).join('')
 }
 
-// ── Voice (Juskoe-style waveform overlay) ────────────────────────────────
-var audioCtx=null,analyser=null,visFrame=null,micStream=null,voiceBars=[];
-
-function initBars(){
-  voiceBars=[];
-  for(var i=0;i<48;i++){var e=document.getElementById('vw'+i);if(e)voiceBars.push(e)}
-}
-
-window.toggleVoice=function(){
-  var btn=$('mic'),overlay=$('voiceOverlay');
-  // Cancel any speaking audio immediately
-  stopAudio();
-  if(recognition){
-    recognition.stop();recognition=null;btn.innerHTML='🎤';btn.style.color='';btn.title='Voice input';
-    if(micStream){micStream.getTracks().forEach(function(t){t.stop()});micStream=null}
-    if(overlay)overlay.style.display='none';stopVis();return
-  }
-  if(!window.isSecureContext){
-    toast('🔒 Voice needs HTTPS. Add http://localhost:9100 to chrome://flags/#unsafely-treat-insecure-origin-as-secure','error');
-    return
-  }
-  if(!navigator.onLine){
-    toast('🌐 No internet connection','error');
-    speakError('Please check your network connection');
-    return
-  }
-  var SR=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!SR){toast('Voice not supported in this browser','error');return}
-  btn.innerHTML='⏹';btn.style.color='var(--r)';btn.title='Stop recording';initBars();
-  // Show overlay IMMEDIATELY — before getUserMedia resolves
-  if(overlay)overlay.style.display='block';
-  var vt=$('voiceTranscript');if(vt)vt.textContent='Starting mic...';
-  navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){
-    micStream=s;if(overlay)overlay.style.display='block';
-    var t=$('voiceTranscript');if(t)t.textContent='Listening...';
-    try{
-      audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-      analyser=audioCtx.createAnalyser();analyser.fftSize=128;
-      audioCtx.createMediaStreamSource(s).connect(analyser);startVis()
-    }catch(e){}
-    recognition=new SR();
-    recognition.lang='en-US';recognition.interimResults=true;recognition.continuous=false;
-    recognition.onresult=function(e){
-      var txt=Array.from(e.results).map(function(r){return r[0].transcript}).join('');
-      $('ci').value=txt;var vt=$('voiceTranscript');if(vt)vt.textContent=txt||'Listening...'
-    };
-    recognition.onend=function(){
-      var t=$('ci').value.trim();btn.innerHTML='🎤';btn.style.color='';btn.title='Voice input';recognition=null;
-      if(micStream){micStream.getTracks().forEach(function(x){x.stop()});micStream=null}
-      if(overlay)overlay.style.display='none';stopVis();
-      if(t){speakAck();setTimeout(function(){sendMsg(t,true)},500)}
-    };
-    recognition.onerror=function(e){
-      btn.innerHTML='🎤';btn.style.color='';btn.title='Voice input';recognition=null;
-      if(micStream){micStream.getTracks().forEach(function(x){x.stop()});micStream=null}
-      if(overlay)overlay.style.display='none';stopVis();
-      if(e.error==='not-allowed')toast('Microphone access denied','error');
-      else if(e.error==='no-speech'){toast('No speech detected','error');speakError('No speech detected')}
-      else toast('Voice error: '+e.error,'error')
-    };
-    recognition.start();btn.innerHTML='⏹';btn.style.color='var(--r)';btn.title='Stop recording';
-    toast('🎤 Listening...','success')
-  }).catch(function(e){
-    btn.innerHTML='🎤';btn.style.color='';
-    if(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'){toast('🔒 Mic blocked. Voice needs HTTPS.','error');speakError('Microphone blocked, please check your browser settings')}
-    else toast('Mic error: '+e.message,'error')
-  })
-};
-
-function startVis(){
-  if(!analyser||!voiceBars.length){initBars();if(!voiceBars.length)return}
-  var d=new Uint8Array(analyser.frequencyBinCount),n=voiceBars.length;
-  (function draw(){
-    if(!analyser)return;analyser.getByteFrequencyData(d);
-    var step=Math.floor(d.length/n);
-    for(var i=0;i<n;i++){
-      var idx=Math.min(i*step,d.length-1),val=d[idx]/255,h=Math.max(3,val*44),bar=voiceBars[i];
-      if(bar){
-        bar.style.height=h+'px';bar.style.opacity=0.2+val*0.8;
-        bar.style.background=val<0.3?'var(--b)':val<0.6?'var(--g)':'var(--r)'
-      }
-    }
-    visFrame=requestAnimationFrame(draw)
-  })()
-}
-function stopVis(){
-  if(visFrame)cancelAnimationFrame(visFrame);
-  voiceBars.forEach(function(b){b.style.height='4px';b.style.opacity='.3';b.style.background='var(--b)'})
-}
-
 // ── Platform-aware Chat ─────────────────────────────────────────────────
 // ── HERMES agent feed (one-way: agent → user; Supabase hermes_chat bus) ──
 // The agent pushes status updates, decisions and market calls as agent rows.
-// This panel polls and renders them as cards. Two-way chat + voice are hidden
-// for now (2026-09-02) — the input bar is display:none in index.html.
+// This panel polls and renders them as cards.
 var _hermesLastId=0;
 var _hermesPollTimer=null;
 var _hermesRows=[];
@@ -1318,111 +1027,11 @@ function loadChatHistory(){
   _hermesPollTimer=setInterval(hermesPollOnce,5000);
 }
 
-// ── AI text correction for voice (clean up transcription artifacts) ─────
-function correctVoiceText(raw){
-  var t=raw.trim();
-  if(!t)return '';
-  // Remove repeated words and stutters
-  t=t.replace(/\b(\w+)\s+\1\b/gi,'$1');
-  // Remove trailing filler words
-  t=t.replace(/\s+(um|uh|like|you know|actually|basically|literally)\s*$/gi,'');
-  // Capitalize first letter
-  t=t.charAt(0).toUpperCase()+t.slice(1);
-  // Ensure terminal punctuation
-  if(!/[.!?]$/.test(t))t+='.';
-  return t
-}
-
 // ── Send message with platform context ──────────────────────────────────
 window.sendMsg=async function(){}; // two-way chat hidden 2026-09-02
 
 function escapeHtml(t){return String(t||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;')}
 function formatMsg(t){return escapeHtml(t).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
-
-// ── Text-to-Speech (Kokoro neural, macOS speechSynthesis fallback) ─────
-window.speakMsg=function(t){
-  // Toggle: click while speaking stops it
-  if(_curSrc||window.speechSynthesis.speaking){stopAudio();return}
-  var c=speakText(t);
-  if(!c||c.length<5)return;
-  kokoroSpeak(c)
-};
-
-window.clearChat=async function(){}; // hidden
-
-// ── Settings: voice language picker ─────────────────────────────────────
-var _voiceData={groups:{},default:'af_heart'};
-window.toggleSettings=function(){
-  var o=$('settingsOverlay');
-  if(!o)return;
-  var showing=!o.classList.contains('hidden');
-  o.classList.toggle('hidden',showing);
-  if(!showing){loadVoices()}
-};
-window.onVoiceGroupChange=function(){
-  var g=$('voiceGroup'),sel=$('voiceSelect');
-  var group=g.options[g.selectedIndex].value;
-  var current=VOICE;
-  sel.innerHTML='';
-  (_voiceData.groups[group]||[]).forEach(function(v){
-    var o=document.createElement('option');
-    o.value=v;o.textContent=v+(v==='am_santa'||v==='em_santa'||v==='pm_santa'?' 🎅':v==='af_heart'?' ♥':'');
-    sel.appendChild(o)
-  });
-  if([].slice.call(sel.options).some(function(o){return o.value===current})){
-    sel.value=current
-  }
-  updateVoicePreview()
-};
-window.onVoiceChange=function(){
-  var sel=$('voiceSelect');
-  if(sel&&sel.value)VOICE=sel.value;   // applied live; persisted on "Save Voice"
-  updateVoicePreview();
-  speakPreview()
-};
-window.saveVoice=function(){
-  if(!VOICE){toast('⚠ Pick a voice first','error');return}
-  localStorage.setItem('gb_voice',VOICE);
-  toast('✅ Voice saved: '+VOICE)
-};
-function updateVoicePreview(){
-  var p=$('voicePreview');
-  if(!p)return;
-  var group=$('voiceGroup');
-  var lang=group?group.options[group.selectedIndex].textContent:'-';
-  p.innerHTML='<div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="color:var(--t3);font-size:10px;text-transform:uppercase">'+lang+'</span><span style="font-size:10px;color:var(--t3)">'+VOICE+'</span></div><div><span style="font-weight:600;color:var(--t)">"Sure, I just spawned your grid bot."</span></div><div style="margin-top:6px;display:flex;gap:6px"><button onclick="speakPreview()" style="background:var(--sf2);border:1px solid var(--br);color:var(--t2);padding:4px 10px;border-radius:5px;font-size:11px;cursor:pointer;font-family:inherit">▶ Preview</button></div>'
-}
-window.speakPreview=function(){
-  if(_curSrc){stopAudio();return}
-  playWav(ttsUrl("Sure, I just spawned your grid bot on Nifty futures"),function(){})
-}
-async function loadVoices(){
-  var d=await api('/api/voices');
-  if(d&&d.groups&&Object.keys(d.groups).length){
-    _voiceData=d;
-    var g=$('voiceGroup');
-    g.innerHTML='';
-    var order=['English (US)','English (UK)','Hindi','Spanish','Italian','French','Japanese','Portuguese','Chinese (Mandarin)'];
-    var groups=d.groups;
-    order.forEach(function(ln){
-      if(!groups[ln])return;
-      var o=document.createElement('option');
-      o.value=ln;o.textContent=ln+' ('+groups[ln].length+')';
-      g.appendChild(o)
-    });
-    Object.keys(groups).forEach(function(ln){
-      if(order.indexOf(ln)>=0)return;
-      var o=document.createElement('option');
-      o.value=ln;o.textContent=ln+' ('+groups[ln].length+')';
-      g.appendChild(o)
-    });
-    // Preselect the group containing the saved voice (default English US first)
-    var savedGroup=null;
-    Object.keys(groups).forEach(function(ln){if(groups[ln].indexOf(VOICE)>=0)savedGroup=ln});
-    g.value=savedGroup||(groups['English (US)']?'English (US)':g.options[0].value);
-    onVoiceGroupChange()
-  }
-}
 
 // ── Main refresh ─────────────────────────────────────────────────────────
 var _eaBook={positions:[],open_orders:[]};
@@ -1551,20 +1160,6 @@ function refreshAllBotTickers(){
     if(b.bot_id===expandedBot)renderBotTicker(b.bot_id,b.symbol)
   })
 }
-
-// ── Keyboard shortcut: hold M for 2s to toggle mic ─────────────────────
-var mHoldTimer=null;
-document.addEventListener('keydown',function(e){
-  if(e.key==='m'||e.key==='M'){
-    if(!mHoldTimer)mHoldTimer=setTimeout(function(){
-      mHoldTimer=null;
-      toggleVoice()
-    },2000)
-  }
-});
-document.addEventListener('keyup',function(e){
-  if(e.key==='m'||e.key==='M'){if(mHoldTimer){clearTimeout(mHoldTimer);mHoldTimer=null}}
-});
 
 // ── Desk chart (TradingView Lightweight Charts, memory snapshot) ─────────
 var _tv=null,_tvSeries=null,_tvLines=[],_tvSym='',_tvTf='',_lastBar=null,_lastLine=null,_tickBusy=false,_overlayLevels=[],_sessionMarks=[],_tvTrades=[];
@@ -2399,7 +1994,6 @@ window.refreshMovers=async function(){
 
 
 // Init last — window.loadMt5Symbols handlers must already exist
-window.speechSynthesis.getVoices();
 setupSymbolCombo();
 initChartMax();
 loadChatHistory();

@@ -47,7 +47,7 @@ ALLOWED_ORIGINS = [
 ]
 
 _PUBLIC_PATHS = {"/", "/main.js", "/vendor/lightweight-charts.js",
-                 "/api/voices", "/api/auth/login", "/api/auth/session",
+                 "/api/auth/login", "/api/auth/session",
                  "/api/mt5/state", "/api/mt5/register"}   # EA-facing: own X-GB-Auth token auth
 
 
@@ -284,7 +284,6 @@ class ChatRequest(BaseModel):
     source: str = "web"
     author: str = "you"
     platform: str = "binance"
-    fromVoice: bool = False
 
 class SpawnRequest(BaseModel):
     name: str = "BOT 1"
@@ -978,49 +977,6 @@ async def account_info():
     }
 
 
-TTS_PROXY = "http://127.0.0.1:9200"
-
-
-@app.get("/api/tts")
-async def api_tts(text: str = "", voice: str = "af_heart", speed: float = 1.0):
-    """Proxy to the local Kokoro TTS sidecar. Returns audio/wav bytes."""
-    import urllib.request, urllib.parse
-    if not text.strip():
-        return Response(content=b"", media_type="audio/wav")
-    url = f"{TTS_PROXY}/v1/audio/speech?" + urllib.parse.urlencode({"text": text, "voice": voice, "speed": speed})
-    try:
-        req = urllib.request.Request(url)
-        with urllib.request.urlopen(req, timeout=30) as r:
-            data = r.read()
-        return Response(content=data, media_type="audio/wav")
-    except Exception:
-        return Response(content=b"", media_type="audio/wav")
-
-
-@app.get("/api/acks")
-async def api_acks(i: int = 0, voice: str = "af_heart"):
-    """Proxy to a cached Kokoro acknowledgment phrase (audio/wav)."""
-    import urllib.request, urllib.parse
-    url = f"{TTS_PROXY}/ack?" + urllib.parse.urlencode({"i": i, "voice": voice})
-    try:
-        with urllib.request.urlopen(url, timeout=30) as r:
-            data = r.read()
-        return Response(content=data, media_type="audio/wav")
-    except Exception:
-        return Response(content=b"", media_type="audio/wav")
-
-
-@app.get("/api/voices")
-async def api_voices():
-    """Available Kokoro voices grouped by language."""
-    import urllib.request
-    try:
-        with urllib.request.urlopen(f"{TTS_PROXY}/voices", timeout=10) as r:
-            return JSONResponse(content=json.loads(r.read()))
-    except Exception:
-        return JSONResponse(content={"count": 0, "groups": {}, "default": "af_heart"})
-
-
 _symbols_cache = {"at": 0.0, "symbols": []}
 
 @app.get("/api/symbols")
@@ -1687,7 +1643,7 @@ CURRENT SYSTEM FACTS:
 - Bot strategy: two-sided neutral limit grids — BUY below price, SELL above
 - AI: DeepSeek via OpenRouter for bot decisions + chat
 - Orchestrator: manages bot lifecycle, position reconciliation, risk management
-- Dashboard: web UI with voice input, chat, live artifact streaming
+- Dashboard: web UI with live artifact streaming
 - External: Nous Hermes Agent handles cron, Discord gateway, and scheduled tasks
 
 When asked about the other platform's data, say "I'll switch you to the {platform} tab for that" rather than guessing.

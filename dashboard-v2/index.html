@@ -60,7 +60,18 @@
 
 /* Spawn form */
 .spawn-form{display:none;padding:8px 12px;background:var(--sf);border-bottom:1px solid var(--br);flex-wrap:wrap;gap:5px;align-items:center;flex-shrink:0;position:relative;z-index:40;overflow:visible}
-.spawn-form.visible{display:flex}
+.spawn-form.visible{display:flex;flex-direction:column;align-items:stretch}
+.tunbar{display:flex;flex-wrap:wrap;gap:5px;align-items:center;width:100%}
+.tunbar select,.tunbar input{background:var(--sf2);color:var(--t);border:1px solid var(--br);padding:5px 8px;border-radius:5px;font-size:11px;outline:none;font-family:inherit}
+.tun-groups{display:flex;flex-direction:column;gap:4px;width:100%;margin-top:4px}
+.tun-sec{border:1px solid var(--br);border-radius:6px;background:var(--sf2);width:100%}
+.tun-head{display:flex;align-items:center;gap:6px;width:100%;background:transparent;border:none;color:var(--t2);font-size:11px;font-weight:600;padding:6px 10px;cursor:pointer;font-family:inherit;text-align:left}
+.tun-head .tun-chev{transition:transform .15s;color:var(--t3);font-size:9px}
+.tun-sec.open .tun-chev{transform:rotate(90deg)}
+.tun-body{display:none;padding:4px 10px 8px}
+.tun-sec.open .tun-body{display:block}
+.tun-rows{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px 10px;align-items:center}
+.tun-rows .fld,.tun-rows .prop-chk{margin:0}
 .spawn-form select,.spawn-form input{background:var(--sf2);color:var(--t);border:1px solid var(--br);padding:5px 8px;border-radius:5px;font-size:11px;outline:none;font-family:inherit}
 .spawn-form select:focus,.spawn-form input:focus{border-color:var(--b)}
 .fld{display:flex;flex-direction:column;gap:2px}
@@ -136,7 +147,7 @@
 .chart-tri.sell{color:#ef4444}
 .chart-tri .pnl{font-size:9px;font-weight:700;margin-top:1px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .chat-area.chart-max .chart-dock{inset:8px;width:auto;height:auto;aspect-ratio:auto;top:8px;right:8px;left:8px;bottom:8px}
-.chat-area.chart-max .chat-msgs,.chat-area.chart-max .chat-input-bar,#voiceOverlay.chat-hide{display:none!important}
+.chat-area.chart-max .chat-msgs,.chat-area.chart-max .chat-input-bar,
 @media(max-width:800px){.chart-dock{position:relative;top:auto;right:auto;width:100%;aspect-ratio:16/9;border-radius:0;border-left:none;border-right:none;box-shadow:none}}
 .chat-msgs{flex:1;overflow-y:auto;padding:12px 20px;scroll-behavior:smooth}
 .chat-msgs>*{max-width:760px;margin-left:auto;margin-right:auto}
@@ -329,41 +340,61 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
     </div>
 
     <div class="spawn-form visible" id="formBinance">
-      <input id="sn" placeholder="Name" value="BOT" style="width:44px"/>
-      <div class="combo" id="ssCombo">
-        <input id="ss" placeholder="Search symbol…" autocomplete="off" value="XAUUSDT"/>
-        <div class="combo-list" id="ssList"></div>
+      <div class="tunbar">
+        <input id="sn" placeholder="Name" value="BOT" style="width:44px"/>
+        <div class="combo" id="ssCombo">
+          <input id="ss" placeholder="Search symbol…" autocomplete="off" value="XAUUSDT"/>
+          <div class="combo-list" id="ssList"></div>
+        </div>
+        <select id="sf"><option value="taker">Taker</option><option value="maker">Maker</option></select>
+        <select id="senv"><option value="live" selected>LIVE</option><option value="demo">DEMO</option></select>
+        <button class="btn btn-primary" onclick="spawnBinance()" style="background:var(--b);color:#fff;padding:5px 12px;border:none;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">＋ Spawn</button>
+        <button class="btn" id="killBtn" onclick="killSwitch()" title="EMERGENCY: stop all bots, cancel all orders, close all positions" style="background:#e5484d;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-weight:700;font-size:11px;font-family:inherit;cursor:pointer">🛑 KILL</button>
+        <label class="prop-chk" title="Evaluation discipline: session/daily sit-outs, 0:00 UTC reset, drawdown governor. Weekend-flat applies either way."><input type="checkbox" id="propMode" onchange="onPropModeChange(this.checked)"><span>prop</span></label>
       </div>
-      <select id="sf"><option value="taker">Taker</option><option value="maker">Maker</option></select>
-      <select id="senv"><option value="live" selected>LIVE</option><option value="demo">DEMO</option></select>
+      <div class="tun-groups">
+        <div class="tun-sec">
+          <button type="button" class="tun-head" onclick="toggleTun(this)"><span class="tun-chev">▸</span> Sizing <span style="color:var(--t3);font-weight:400">— mode, compound, volume, leverage</span></button>
+          <div class="tun-body"><div class="tun-rows">
       <label class="fld" title="Grid mode: scalp (tight, fast TP), swing (wide, 2.5x TP, 24h holds), auto (ADX regime picks per symbol)"><span>Mode</span><select id="gridMode" onchange="onGridModeChange(this.value)" style="width:70px"><option value="scalp" selected>Scalp</option><option value="swing">Swing</option><option value="auto">Auto</option></select></label>
       <label class="prop-chk" title="Compound: per-leg = 2% of live equity (grows/shrinks with account). Default ON."><input type="checkbox" id="compoundChk" checked onchange="onCompoundChange(this.checked)"><span>comp</span></label>
       <label class="fld" title="Compound fraction of equity per leg"><select id="compoundFrac" onchange="onCompoundFracChange(this.value)" style="width:56px"><option value="0.02" selected>2%</option><option value="0.05">5%</option></select></label>
       <label class="fld" title="Volume % of available funds for this grid (10-100% global, default 50% → 0.5$ per 1% on 25$)"><span>Vol %</span><input id="spawnVol" type="range" min="10" max="100" step="5" value="50" style="width:74px;accent-color:var(--b)" oninput="onSpawnVolChange(this.value)"><span id="spawnVolVal" style="font-size:10px;color:var(--t2);min-width:28px;text-align:right">50%</span></label>
       <label class="fld" title="Max wallet use % — caps total fleet margin at this share of free margin (separate from Vol % which sizes each level)"><span>Wallet %</span><input id="spawnWallet" type="range" min="10" max="100" step="5" value="70" style="width:74px;accent-color:var(--b)" oninput="onSpawnWalletChange(this.value)"><span id="spawnWalletVal" style="font-size:10px;color:var(--t2);min-width:28px;text-align:right">70%</span></label>
       <label class="fld" title="Leverage for every spawn/GuruAI grid (MAX = per-symbol bracket ceiling; falls back to symbol max then 10x if unavailable)"><span>Lev</span><select id="spawnLev" onchange="onSpawnLevChange(this.value)" style="width:62px"><option value="MAX">MAX</option><option value="5">5x</option><option value="10" selected>10x</option><option value="25">25x</option><option value="50">50x</option><option value="75">75x</option><option value="100">100x</option></select></label>
-      <button class="btn btn-primary" onclick="spawnBinance()" style="background:var(--b);color:#fff;padding:5px 12px;border:none;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">＋ Spawn</button>
+          </div></div>
+        </div>
+        <div class="tun-sec">
+          <button type="button" class="tun-head" onclick="toggleTun(this)"><span class="tun-chev">▸</span> Auto <span style="color:var(--t3);font-weight:400">— scan & run a fleet</span></button>
+          <div class="tun-body"><div class="tun-rows">
       <div class="stepper" title="GuruAI bots (1–10)">
         <button type="button" onclick="guruN(-1)">−</button>
         <span id="guruNVal">10</span>
         <button type="button" onclick="guruN(1)">+</button>
       </div>
       <button class="btn btn-ghost" id="guruBtn" onclick="startGuruAI()" style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">🧠 GuruAI</button>
-      <button class="btn btn-ghost" id="btBtn" onclick="startBacktest()" title="Offline grid replay: math+gates only (JEV only for 1W). Read-only, touches nothing live." style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">📊 Backtest</button>
-      <label class="fld" title="Backtest horizon (JEV only for 1W, pure math beyond)"><select id="btHorizon" style="width:64px"><option value="1W" selected>1 week</option><option value="2W">2 weeks</option><option value="3W">3 weeks</option><option value="4W">4 weeks</option><option value="1M">1 month</option><option value="2M">2 months</option><option value="3M">3 months</option><option value="5M">5 months</option><option value="6M">6 months</option></select></label>
+          </div></div>
+        </div>
+        <div class="tun-sec">
+          <button type="button" class="tun-head" onclick="toggleTun(this)"><span class="tun-chev">▸</span> Backtest <span style="color:var(--t3);font-weight:400">— offline replay, touches nothing live</span></button>
+          <div class="tun-body"><div class="tun-rows">
+      <button class="btn btn-ghost" id="btBtn" onclick="startBacktest()" title="Offline grid replay: math+gates only. Read-only, touches nothing live." style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">📊 Backtest</button>
+      <label class="fld" title="Backtest horizon (pure math replay)"><select id="btHorizon" style="width:64px"><option value="1W" selected>1 week</option><option value="2W">2 weeks</option><option value="3W">3 weeks</option><option value="4W">4 weeks</option><option value="1M">1 month</option><option value="2M">2 months</option><option value="3M">3 months</option><option value="5M">5 months</option><option value="6M">6 months</option></select></label>
       <label class="fld" title="Backtest per-level notional USD"><span>$</span><input id="btSize" type="number" min="5" step="5" value="1000" style="width:58px"></label>
       <label class="fld" title="Backtest starting account equity USD (liquidation floor)"><span>Eq$</span><input id="btEquity" type="number" min="10" step="10" value="10000" style="width:62px"></label>
-      <button class="btn" id="killBtn" onclick="killSwitch()" title="EMERGENCY: stop all bots, cancel all orders, close all positions" style="background:#e5484d;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-weight:700;font-size:11px;font-family:inherit;cursor:pointer">🛑 KILL</button>
-      <label class="prop-chk" title="Prop-firm challenge discipline: Friday-flat + news blackout (GB_NEWS_EVENTS). Blocks spawns and flattens into weekends/news."><input type="checkbox" id="propMode" onchange="onPropModeChange(this.checked)"><span>prop</span></label>
+          </div></div>
+        </div>
+      </div>
     </div>
     <div id="btResult" style="display:none;font-size:11px;color:var(--t2);padding:6px 8px;border:1px solid var(--br);border-radius:6px;margin:4px 0"></div>
     <div id="propPanel" style="display:none;font-size:11px;padding:6px 8px;border:1px solid rgba(212,160,23,.4);border-radius:6px;margin:4px 0;background:rgba(212,160,23,.06)">
-      <b style="color:#d4a017">🛡 PROP · Maven $10K Evaluation</b>
+      <b style="color:#d4a017">🛡 PROP · $10K Evaluation</b>
       <span id="propBody" style="color:var(--t2)">loading…</span>
     </div>
 
 
     <div class="spawn-form" id="formMt5">
+      <div class="tunbar">
       <label class="fld"><span>Name</span><input id="mt5Name" value="MT5" placeholder="MT5"/></label>
       <div class="combo" id="mt5SymCombo">
         <input id="mt5Sym" placeholder="Search MT5 symbols…" autocomplete="off" autocapitalize="off" spellcheck="false" value="XAUUSD"/>
@@ -371,17 +402,25 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
       </div>
       <span id="mt5SymStatus" style="font-size:10px;font-weight:700;color:var(--t3)">·</span>
       <button class="btn btn-primary" onclick="spawnMt5()" style="background:#d4a017;color:#1a1a1a;padding:5px 12px;border:none;border-radius:5px;font-weight:700;font-size:11px;font-family:inherit;cursor:pointer">＋ Spawn</button>
-      <label class="prop-chk" title="Prop-firm daily/overall loss, profit bank, consecutive-loss breaker. Off = clean GuruAI.">
+      <button class="btn" id="mt5KillBtn" onclick="killMt5()" title="EMERGENCY: close all MT5 positions, cancel all orders, stop GuruAI" style="background:#e5484d;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-weight:700;font-size:11px;font-family:inherit;cursor:pointer">🛑 KILL</button>
+      <span id="mt5ConnBadge" style="font-size:10px;font-weight:700;color:var(--t3)"></span>
+      </div>
+      <div class="tun-groups">
+        <div class="tun-sec">
+          <button type="button" class="tun-head" onclick="toggleTun(this)"><span class="tun-chev">▸</span> Rules &amp; tools <span style="color:var(--t3);font-weight:400">— risk rules, auto, backtest</span></button>
+          <div class="tun-body"><div class="tun-rows">
+      <label class="prop-chk" title="Daily/overall loss, profit bank, consecutive-loss breaker. Off = clean GuruAI.">
         <input type="checkbox" id="mt5Ftmo" checked/>
         <span>proprules</span>
       </label>
       <button class="btn btn-ghost" id="mt5GuruBtn" onclick="startMt5Guru()" style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">🧠 GuruAI</button>
-      <button class="btn btn-ghost" id="btBtnM" onclick="startBacktest()" title="Offline grid replay: math+gates only (JEV only for 1W). Read-only." style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">📊 Backtest</button>
-      <label class="fld" title="Backtest horizon (JEV only for 1W, pure math beyond)"><select id="btHorizonM" style="width:64px"><option value="1W" selected>1 week</option><option value="2W">2 weeks</option><option value="3W">3 weeks</option><option value="4W">4 weeks</option><option value="1M">1 month</option><option value="2M">2 months</option><option value="3M">3 months</option><option value="5M">5 months</option><option value="6M">6 months</option></select></label>
+      <button class="btn btn-ghost" id="btBtnM" onclick="startBacktest()" title="Offline grid replay. Read-only." style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">📊 Backtest</button>
+      <label class="fld" title="Backtest horizon"><select id="btHorizonM" style="width:64px"><option value="1W" selected>1 week</option><option value="2W">2 weeks</option><option value="3W">3 weeks</option><option value="4W">4 weeks</option><option value="1M">1 month</option><option value="2M">2 months</option><option value="3M">3 months</option><option value="5M">5 months</option><option value="6M">6 months</option></select></label>
       <label class="fld" title="Backtest per-level notional USD"><span>$</span><input id="btSizeM" type="number" min="5" step="5" value="1000" style="width:58px"></label>
       <label class="fld" title="Backtest starting account equity USD"><span>Eq$</span><input id="btEquityM" type="number" min="10" step="10" value="10000" style="width:62px"></label>
-      <button class="btn" id="mt5KillBtn" onclick="killMt5()" title="EMERGENCY: close all MT5 positions, cancel all orders, stop GuruAI" style="background:#e5484d;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-weight:700;font-size:11px;font-family:inherit;cursor:pointer">🛑 KILL</button>
-      <span id="mt5ConnBadge" style="font-size:10px;font-weight:700;color:var(--t3)"></span>
+          </div></div>
+        </div>
+      </div>
     </div>
     <div id="btResultM" style="display:none;font-size:11px;color:var(--t2);padding:6px 8px;border:1px solid var(--br);border-radius:6px;margin:4px 0"></div>
     <div id="mt5InfoBar" style="display:none;background:rgba(212,160,23,.1);border:1px solid rgba(212,160,23,.35);padding:6px 12px;font-size:11px;color:var(--t2)"></div>
@@ -419,26 +458,11 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
       </div>
       <div class="chat-msgs hermes-feed" id="chatMsgs"><div class="welcome"><div style="font-size:32px;opacity:.2">🛰️</div><p><b style="color:var(--t2)">Activity feed</b> — live status, fills & risk events from your bots. Hover or touch to pause the scroll.</p></div></div>
 
-      <div id="voiceOverlay" style="display:none;background:var(--sf);border-top:1px solid var(--br);padding:8px 12px;flex-shrink:0">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
-          <div style="display:flex;align-items:center;gap:5px">
-            <div style="width:5px;height:5px;border-radius:50%;background:var(--r);animation:pulse 1s infinite"></div>
-            <span style="font-size:10px;color:var(--t2);font-weight:600">LISTENING</span>
-          </div>
-          <button onclick="toggleVoice()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:1px">✕</button>
-        </div>
-        <div id="voiceWaveform" style="display:flex;align-items:center;gap:2px;height:24px;margin-bottom:3px">
-          <script>for(var i=0;i<48;i++)document.write('<div class="vw-bar" id="vw'+i+'" style="flex:1;height:3px;background:var(--b);border-radius:2px;opacity:.3;transition:height .08s,opacity .08s"></div>');</script>
-        </div>
-        <div id="voiceTranscript" style="font-size:11px;color:var(--t2);min-height:14px">Listening...</div>
-      </div>
-
       <div class="chat-input-bar" id="chatInputBar" style="display:none">
         <div class="chat-input-wrap">
           <textarea id="ci" placeholder="Message HERMES — your account, markets, trades…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
           <div class="actions">
             <button class="btn-icon" onclick="clearChat()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;padding:3px;font-size:11px">🗑️</button>
-            <button class="btn-icon" id="mic" onclick="toggleVoice()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;padding:3px;font-size:11px">🎤</button>
           </div>
         </div>
       </div>
@@ -456,16 +480,7 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
       <button onclick="toggleSettings()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:15px">✕</button>
     </div>
 
-    <div class="set-section collapsed">
-      <div class="set-head" onclick="toggleSet(this)"><span>🎤 Voice</span><span class="set-chev">▸</span></div>
-      <div class="set-body">
-        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px">Voice Language</label>
-        <select id="voiceGroup" class="settings-select" onchange="onVoiceGroupChange()"></select>
-        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:12px 0 5px">Voice</label>
-        <select id="voiceSelect" class="settings-select" onchange="onVoiceChange()"></select>
-        <div id="voicePreview" style="margin-top:12px;font-size:12px;color:var(--t2);background:var(--sf2);border:1px solid var(--br);border-radius:8px;padding:8px 10px"></div>
-        <button onclick="saveVoice()" style="margin-top:10px;background:var(--b2);color:var(--b);border:1px solid var(--b);padding:6px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer;width:100%">💾 Save Voice</button>
-      </div>
+
     </div>
 
     <div class="set-section collapsed" data-plat="binance">
