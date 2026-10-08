@@ -2,7 +2,37 @@
 
 Open-source auto-grid trading system for **Binance** (USDT-M futures) & **MT5** — self-hosted bot with AI screening, prop-style risk governor, and built-in dashboard. Bring your own keys.
 
-> Trading involves real risk of loss. This is research software, not financial advice. Start on testnet/demo.
+> Independent open-source software for **learning, experimentation, research, and educational purposes only**. Not financial advice. Start on testnet/demo.
+
+## Disclaimer / Important Notice
+
+- This project is provided for learning, experimentation, research, and educational purposes only.
+- It is **not financial, investment, trading, or professional advice** of any kind.
+- No profitability, performance, or financial return is guaranteed or implied.
+- You are solely responsible for your own trading decisions, configuration, risk management, capital, and compliance with applicable laws, regulations, broker/exchange rules, and terms of service.
+- This project does not provide managed trading, investment management, custody, or personalized investment recommendations.
+- The software is **self-hosted and single-user per installation**: you clone or fork the MIT-licensed source and run your own instance on infrastructure you control.
+- You connect **your own Binance account using your own API credentials**. Keys and funds stay under your control — never share them with the project author. The author does not receive, control, or custody user funds or credentials, and does not execute trades on anyone's behalf.
+- Use appropriately restricted API keys. **Never enable withdrawal permissions** on keys used by any trading bot.
+- Automated trading involves substantial risk, including possible loss of capital. Test with paper trading / testnet and understand the strategy before using real funds.
+- The MIT license governs the software itself; it is not financial authorization, investment advice, or a guarantee of regulatory compliance in any jurisdiction.
+- Any optional **Buy Me a Coffee** support is voluntary support for the open-source project — not payment for investment management, trading profits, signals, or guaranteed returns.
+
+### How it works
+
+```text
+GitHub
+  ↓  MIT-licensed source code
+Anyone can download / fork / run it
+  ↓
+User runs their OWN instance on their OWN server or machine
+  ↓
+User connects THEIR Binance account using THEIR own API keys
+  ↓
+User makes THEIR own trading decisions and assumes THEIR own risk
+  ↓
+Optional Buy Me a Coffee support (voluntary, no returns promised)
+```
 
 ## What it does
 
