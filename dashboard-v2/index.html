@@ -243,7 +243,8 @@
 
 /* Settings modal */
 .settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:flex-start;z-index:900;padding:0}
-.settings-panel{width:260px;background:var(--sf);border-right:1px solid var(--br);height:100%;padding:16px;overflow-y:auto;animation:slideRight .2s ease-out}
+.settings-panel{width:340px;max-width:92vw;background:var(--sf);border-right:1px solid var(--br);height:100%;padding:16px;overflow-y:auto;overflow-x:hidden;box-sizing:border-box;animation:slideRight .2s ease-out}
+.settings-panel *{box-sizing:border-box;max-width:100%}
 @keyframes slideRight{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
 .settings-select{width:100%;background:var(--sf2);color:var(--t);border:1px solid var(--br);border-radius:6px;padding:7px 9px;font-size:12px;outline:none;font-family:inherit}
 .settings-select:focus{border-color:var(--b)}
@@ -478,9 +479,6 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <h3 style="font-size:14px;color:var(--t)">⚙ Settings</h3>
       <button onclick="toggleSettings()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:15px">✕</button>
-    </div>
-
-
     </div>
 
     <div class="set-section collapsed" data-plat="binance">
