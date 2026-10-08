@@ -540,18 +540,12 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
       <h3 style="font-size:15px;color:var(--t);margin-top:4px">Ture</h3>
       <div style="font-size:10px;color:var(--t3);margin-top:2px">Pick a platform to open its desk</div>
     </div>
-    <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Desk</label>
-    <select id="loginPlatSelect" class="settings-select" style="margin-bottom:8px">
-      <option value="binance">Binance — USDT-M futures</option>
-      <option value="mt5">MT5 — EA bridge</option>
-    </select>
-    <div class="plat-grid" id="loginPlatPick">
-      <button type="button" class="plat-card" data-plat="binance">Binance<span>USDT-M futures</span></button>
-      <button type="button" class="plat-card" data-plat="mt5">MT5<span>EA bridge</span></button>
+    <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Choose your platform</label>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button type="button" onclick="enterLocal('binance')" style="background:var(--b);color:#fff;border:none;padding:12px;border-radius:8px;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer">₿ Binance<span style="display:block;font-size:10px;font-weight:400;opacity:.8">USDT-M futures</span></button>
+      <button type="button" onclick="enterLocal('mt5')" style="background:var(--sf2);color:var(--t);border:1px solid var(--br);padding:12px;border-radius:8px;font-weight:700;font-size:14px;font-family:inherit;cursor:pointer">📈 MT5<span style="display:block;font-size:10px;font-weight:400;opacity:.7">EA bridge</span></button>
     </div>
-    <div id="loginPlatHint" style="font-size:10px;color:var(--t3);margin:6px 0 2px">Selected: Binance</div>
-    <div style="font-size:10px;color:var(--t3);margin:12px 0 2px">Single-user build — no account needed. Your keys stay on this server.</div>
-    <button type="button" id="loginBtn" onclick="enterLocal()" style="margin-top:10px;background:var(--b);color:#fff;border:none;padding:8px 12px;border-radius:6px;font-weight:600;font-size:12px;font-family:inherit;cursor:pointer;width:100%">Enter →</button>
+    <div style="font-size:10px;color:var(--t3);margin:12px 0 2px;text-align:center">Single-user build — no account needed. Your keys stay on this server.</div>
     <div style="text-align:center;margin-top:10px"><a href="#" onclick="changeServer();return false" style="font-size:10px;color:var(--t3);text-decoration:underline">Change trading server</a></div>
   </div>
 </div>

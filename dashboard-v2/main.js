@@ -2409,7 +2409,8 @@ loadChatHistory();
 // Any HTTP response = server alive (even 401). Network failure = server
 // unreachable → ask user for the server address, test, save, reload.
 var _booted=false;
-window.enterLocal=function(){
+window.enterLocal=function(plat){
+  if(plat&&PLATS[plat]){try{sessionStorage.setItem(DESK_KEY,plat)}catch(e){}}
   writeTabAuth('local','local');
   var lu=$('loggedInUser');if(lu)lu.textContent='👤 local';
   hideLogin();
