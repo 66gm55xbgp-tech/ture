@@ -1,4 +1,4 @@
-// GBV4 — Multi-Platform Grid Command Center
+// Ture — self-hosted trading console
 // API base is dynamic: saved server URL (localStorage 'gb.server.url') is health-tested
 // on load. When the dashboard is served BY the trading server itself, origin is the
 // default. When hosted elsewhere (Vercel), the user must set/test the server once.
@@ -261,7 +261,7 @@ window.applyWorkspace=function(t){
   activeTab=t;
   try{document.documentElement.setAttribute('data-desk',t)}catch(e){}
   document.body.setAttribute('data-platform',t);
-  try{document.title='GB · '+PLATS[t].label}catch(e){}
+  try{document.title='Ture · '+PLATS[t].label}catch(e){}
   var title=$('workspaceTitle');if(title)title.textContent=PLATS[t].label;
   var sub=$('workspaceSub');if(sub)sub.textContent=PLATS[t].sub;
   var sw=$('platSwitch');if(sw&&sw.value!==t)sw.value=t;
