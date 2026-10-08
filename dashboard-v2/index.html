@@ -280,7 +280,7 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
   try{document.title='Ture · '+(p==='mt5'?'MT5':'Binance')}catch(e){}
   document.addEventListener('DOMContentLoaded',function(){
     var titles={binance:'Binance',mt5:'MT5'};
-    var subs={binance:'USDT-M futures',mt5:'FTMO / EA'};
+    var subs={binance:'USDT-M futures',mt5:'EA bridge'};
     var t=document.getElementById('workspaceTitle');if(t)t.textContent=titles[p]||'Binance';
     var s=document.getElementById('workspaceSub');if(s)s.textContent=subs[p]||'';
     var sw=document.getElementById('platSwitch');if(sw)sw.value=p;
@@ -315,7 +315,7 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
       (function(){
         var p=document.documentElement.getAttribute('data-desk')||'binance';
         var titles={binance:'Binance',mt5:'MT5'};
-        var subs={binance:'USDT-M futures',mt5:'FTMO / EA'};
+        var subs={binance:'USDT-M futures',mt5:'EA bridge'};
         var t=document.getElementById('workspaceTitle');if(t)t.textContent=titles[p]||'Binance';
         var s=document.getElementById('workspaceSub');if(s)s.textContent=subs[p]||'';
         var sw=document.getElementById('platSwitch');if(sw)sw.value=p;
@@ -538,23 +538,20 @@ html[data-desk="mt5"] #formMt5{display:flex!important}
     <div style="text-align:center;margin-bottom:16px">
       <div style="font-size:28px">🧠</div>
       <h3 style="font-size:15px;color:var(--t);margin-top:4px">Ture</h3>
-      <div style="font-size:10px;color:var(--t3);margin-top:2px">This tab only — other tabs keep their own login and desk</div>
+      <div style="font-size:10px;color:var(--t3);margin-top:2px">Pick a platform to open its desk</div>
     </div>
     <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Desk</label>
     <select id="loginPlatSelect" class="settings-select" style="margin-bottom:8px">
       <option value="binance">Binance — USDT-M futures</option>
-      <option value="mt5">MT5 — FTMO / EA</option>
+      <option value="mt5">MT5 — EA bridge</option>
     </select>
     <div class="plat-grid" id="loginPlatPick">
       <button type="button" class="plat-card" data-plat="binance">Binance<span>USDT-M futures</span></button>
-      <button type="button" class="plat-card" data-plat="mt5">MT5<span>FTMO / EA</span></button>
+      <button type="button" class="plat-card" data-plat="mt5">MT5<span>EA bridge</span></button>
     </div>
     <div id="loginPlatHint" style="font-size:10px;color:var(--t3);margin:6px 0 2px">Selected: Binance</div>
-    <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:12px 0 4px">Email</label>
-    <input id="loginEmail" type="email" class="settings-select" placeholder="you@example.com" autocomplete="email"/>
-    <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:10px 0 4px">Password</label>
-    <input id="loginPassword" type="password" class="settings-select" placeholder="••••••••" autocomplete="current-password"/>
-    <button type="button" id="loginBtn" style="margin-top:14px;background:var(--b);color:#fff;border:none;padding:8px 12px;border-radius:6px;font-weight:600;font-size:12px;font-family:inherit;cursor:pointer;width:100%">Sign in</button>
+    <div style="font-size:10px;color:var(--t3);margin:12px 0 2px">Single-user build — no account needed. Your keys stay on this server.</div>
+    <button type="button" id="loginBtn" onclick="enterLocal()" style="margin-top:10px;background:var(--b);color:#fff;border:none;padding:8px 12px;border-radius:6px;font-weight:600;font-size:12px;font-family:inherit;cursor:pointer;width:100%">Enter →</button>
     <div style="text-align:center;margin-top:10px"><a href="#" onclick="changeServer();return false" style="font-size:10px;color:var(--t3);text-decoration:underline">Change trading server</a></div>
   </div>
 </div>

@@ -65,7 +65,7 @@ const USER_KEY='gb.dashboard.user';
 const PLAT_KEY='gb.dashboard.platform';
 const DESK_KEY='gb.dashboard.desk';
 const E={XAUUSDT:'🥇',XAUINR:'🥇',XAUUSD:'🥇',GOLD:'🥇',BTCUSDT:'₿',BTCINR:'₿',ETHUSDT:'💎',ETHINR:'💎',SOLUSDT:'🔮',SOLINR:'🔮',INJUSDT:'💉',DEXEUSDT:'🔥',BNBUSDT:'🟡',DOGEUSDT:'🐕',BONKUSDT:'🐶',PEPEUSDT:'🐸',NIFTY:'📊',BANKNIFTY:'🏦',SILVER:'🔘',CRUDEOIL:'🛢️'};
-const PLATS={binance:{label:'Binance',sub:'USDT-M futures'},mt5:{label:'MT5',sub:'FTMO / EA'}};
+const PLATS={binance:{label:'Binance',sub:'USDT-M futures'},mt5:{label:'MT5',sub:'EA bridge'}};
 function validDesk(p){return p&&PLATS[p]?p:''}
 function readDesk(){
   try{
@@ -2305,7 +2305,7 @@ window.closeAllMt5=async function(btn){
   btn.disabled=false;btn.textContent=orig;refresh()
 };
 
-// ── MT5 GuruAI (DynamicGuruAI + FTMO risk layer) ─────────────────────────
+// ── MT5 GuruAI (DynamicGuruAI + risk layer) ─────────────────────────
 window.startMt5Guru=async function(){
   var sym=$('mt5Sym').value.trim().toUpperCase();
   if(!sym){toast('❌ Pick an MT5 symbol first','error');return}
@@ -2409,15 +2409,17 @@ loadChatHistory();
 // Any HTTP response = server alive (even 401). Network failure = server
 // unreachable → ask user for the server address, test, save, reload.
 var _booted=false;
+window.enterLocal=function(){
+  writeTabAuth('local','local');
+  var lu=$('loggedInUser');if(lu)lu.textContent='👤 local';
+  hideLogin();
+  applyWorkspace(readDesk());
+  refresh();
+};
 function bootApp(){
   if(_booted)return;_booted=true;
-  if(isLoggedIn()){
-    applyWorkspace(readDesk());
-    refresh();
-  }else{
-    pickLoginPlat(readDesk());
-    showLogin();
-  }
+  pickLoginPlat(readDesk());
+  showLogin();
 }
 function bootServerGate(){
   if(!API){window.showServerModal('Enter your trading server address (e.g. https://your-server:9100)');return}
