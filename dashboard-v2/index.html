@@ -1,0 +1,577 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/><title>GBV4</title><link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>G</text></svg>"/>
+<style>
+:root{--bg:#07070a;--sf:#0e0e12;--sf2:#16161d;--br:#1e1e28;--t:#e8e8ed;--t2:#8a8a9a;--t3:#5a5a6a;--g:#22c55e;--g2:rgba(34,197,94,.08);--y:#eab308;--y2:rgba(234,179,8,.08);--r:#ef4444;--r2:rgba(239,68,68,.08);--b:#6366f1;--b2:rgba(99,102,241,.12);--u:#f59e0b;--u2:rgba(245,158,11,.1);--border-rad:8px}
+*{margin:0;padding:0;box-sizing:border-box}body{background:var(--bg);color:var(--t);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.5}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track:transparent}::-webkit-scrollbar-thumb{background:var(--br);border-radius:2px}
+
+/* Animated gradient ring icon */
+.gradient-ring{width:26px;height:26px;border-radius:7px;position:relative;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.gradient-ring::before{content:'';position:absolute;inset:-2px;border-radius:9px;background:conic-gradient(#6366f1,#8b5cf6,#ec4899,#f59e0b,#22c55e,#6366f1);animation:spin 3s linear infinite;mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);mask-composite:exclude;-webkit-mask-composite:destination-out;padding:2px}
+.gradient-ring .inner{width:100%;height:100%;border-radius:6px;background:linear-gradient(135deg,var(--b),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:13px;color:#fff;font-weight:700}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Streaming border on answer bubble */
+.msg.chat-unit .bubble.answer.streaming{position:relative;overflow:hidden}
+.msg.chat-unit .bubble.answer.streaming::before{content:'';position:absolute;inset:0;border-radius:10px;padding:1.5px;background:conic-gradient(#6366f1,#22c55e,#f59e0b,#ef4444,#ec4899,#6366f1);animation:spin 2s linear infinite;-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:destination-out;mask-composite:exclude;pointer-events:none;z-index:10}
+.msg.chat-unit .bubble.answer.streaming .thinking-text{color:var(--t2);font-style:italic;position:relative;z-index:11}
+
+/* Full-height layout: sidebar | main */
+.app{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:280px;background:var(--sf);border-right:1px solid var(--br);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-header{padding:12px 16px;border-bottom:1px solid var(--br);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.sidebar-header h2{font-size:14px;font-weight:700;color:var(--t)}
+.sidebar-header .live-dot{width:6px;height:6px;border-radius:50%;margin-left:auto;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:4px 0}
+.sidebar-section{padding:8px 14px}
+.sidebar-section h3{font-size:9px;text-transform:uppercase;color:var(--t3);letter-spacing:.8px;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.sidebar-section h3 .accent{display:inline-block;width:3px;height:12px;border-radius:2px;flex-shrink:0}
+.sidebar-footer{padding:6px 14px;border-top:1px solid var(--br);font-size:9px;color:var(--t3);display:flex;justify-content:space-between;flex-shrink:0}
+
+/* Main area: fills remaining space */
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+
+/* Tab bar (hidden — workspace bar is the platform chrome) */
+.tab-bar{display:none}
+.workspace-bar{display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--sf);border-bottom:1px solid var(--br);flex-shrink:0}
+.workspace-bar .ws-name{font-size:13px;font-weight:700;color:var(--t);letter-spacing:.2px}
+.workspace-bar .ws-sub{font-size:10px;color:var(--t3);margin-left:2px}
+.workspace-bar select{margin-left:auto;background:var(--sf2);color:var(--t);border:1px solid var(--br);border-radius:6px;padding:4px 8px;font-size:11px;font-weight:600;font-family:inherit;outline:none}
+.plat-grid{display:flex;flex-direction:column;gap:8px;margin:10px 0 4px;position:relative;z-index:5;pointer-events:auto}
+.plat-card{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;background:var(--sf2);border:1px solid var(--br);border-radius:8px;padding:12px 14px;cursor:pointer;text-align:left;font-size:13px;font-weight:700;color:var(--t2);font-family:inherit;line-height:1.3;pointer-events:auto;position:relative;z-index:5;-webkit-tap-highlight-color:transparent}
+.plat-card:hover{border-color:rgba(255,255,255,.16);color:var(--t)}
+.plat-card.sel{border-color:var(--b);color:var(--t);background:var(--b2);box-shadow:inset 0 0 0 1px var(--b)}
+.plat-card span{font-size:10px;font-weight:500;color:var(--t3);pointer-events:none;margin-left:auto}
+
+/* Login is its own modal — never reuse the settings left-sidebar panel */
+
+/* HERMES one-way agent feed: vertical ticker; pauses on hover/touch */
+.hermes-feed{padding:10px 14px}
+.hermes-feed .hf-item{max-width:760px;margin:0 auto 10px;background:var(--sf2);border:1px solid var(--br);border-left:2px solid var(--b);border-radius:8px;padding:8px 12px;animation:hfIn .35s ease}
+.hermes-feed .hf-item.advisory{border-left-color:var(--y)}
+.hermes-feed .hf-item.summary{border-left-color:var(--g)}
+.hermes-feed .hf-item.decision{border-left-color:var(--r)}
+.hermes-feed .hf-head{display:flex;align-items:center;gap:6px;font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:3px}
+.hermes-feed .hf-time{margin-left:auto;letter-spacing:0}
+@keyframes hfIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+.login-overlay{position:fixed;inset:0;background:#000;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);display:flex;align-items:center;justify-content:center;z-index:1200;padding:16px;pointer-events:auto}
+.login-overlay.hidden{display:none!important}
+.login-card{width:min(400px,100%);background:var(--sf);border:1px solid var(--br);border-radius:12px;padding:20px 18px;max-height:calc(100vh - 32px);overflow-y:auto;position:relative;z-index:1201;pointer-events:auto}
+
+/* Spawn form */
+.spawn-form{display:none;padding:8px 12px;background:var(--sf);border-bottom:1px solid var(--br);flex-wrap:wrap;gap:5px;align-items:center;flex-shrink:0;position:relative;z-index:40;overflow:visible}
+.spawn-form.visible{display:flex}
+.spawn-form select,.spawn-form input{background:var(--sf2);color:var(--t);border:1px solid var(--br);padding:5px 8px;border-radius:5px;font-size:11px;outline:none;font-family:inherit}
+.spawn-form select:focus,.spawn-form input:focus{border-color:var(--b)}
+.fld{display:flex;flex-direction:column;gap:2px}
+.fld span{font-size:8px;color:var(--t3);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.fld input,.fld select{width:74px}
+.prop-chk{display:inline-flex;align-items:center;gap:3px;margin:0;padding:0 4px 0 2px;height:26px;cursor:pointer;user-select:none;flex-shrink:0}
+.prop-chk input{margin:0;padding:0;width:13px;height:13px;accent-color:#d4a017;flex-shrink:0}
+.prop-chk span{font-size:10px;font-weight:700;color:var(--t2);letter-spacing:0;text-transform:none;line-height:1}
+.stepper{display:inline-flex;align-items:stretch;border:1px solid var(--br);border-radius:5px;overflow:hidden;height:26px;flex-shrink:0}
+.stepper button{width:22px;background:var(--sf2);border:none;color:var(--t2);cursor:pointer;font-size:14px;font-family:inherit;line-height:1;padding:0}
+.stepper button:hover{color:var(--t);background:var(--sf)}
+.stepper #guruNVal{min-width:20px;text-align:center;font-size:12px;font-weight:700;color:var(--t);padding:0 6px;display:flex;align-items:center;justify-content:center}
+
+/* Searchable symbol combobox */
+.combo{position:relative;z-index:41}
+.combo input{width:150px}
+.combo-list{position:absolute;top:calc(100% + 4px);left:0;min-width:230px;max-height:280px;overflow-y:auto;background:var(--sf2);border:1px solid var(--br);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.5);display:none;z-index:80}
+.combo-list.open{display:block!important}
+.combo-item{display:flex;align-items:center;gap:8px;padding:6px 10px;font-size:11px;cursor:pointer;font-variant-numeric:tabular-nums}
+.combo-item:hover,.combo-item.hover{background:var(--b2)}
+.combo-item.selected{background:var(--b2)}
+.combo-item .csym{font-weight:700;color:var(--t);min-width:76px}
+.combo-item .cprice{color:var(--t3);margin-left:auto}
+.combo-item .cchg{min-width:52px;text-align:right}
+.combo-empty{padding:8px 10px;font-size:11px;color:var(--t3)}
+
+/* Chat area: fills remaining space in main */
+.chat-area{flex:1;display:flex;flex-direction:column;min-height:0;position:relative}
+.chart-dock{position:absolute;top:10px;right:14px;width:min(22vw,300px);aspect-ratio:1;z-index:6;background:var(--sf);border:1px solid var(--br);border-radius:10px;display:flex;flex-direction:column;overflow:visible;box-shadow:0 8px 28px rgba(0,0,0,.35)}
+.chart-dock .chart-head{display:flex;align-items:center;gap:6px;padding:6px 8px;border-bottom:1px solid var(--br);flex-shrink:0;position:relative;z-index:8}
+.chart-dock .chart-head .cs{font-size:11px;font-weight:700;color:var(--t);letter-spacing:.2px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chart-dock .chart-head .ctk-wrap{position:relative;display:inline-flex;flex-shrink:0}
+.chart-dock .chart-head .ctk{font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;color:#a5b4fc;white-space:nowrap;cursor:default}
+.tick-tape{display:none;position:absolute;top:calc(100% + 6px);left:0;min-width:118px;max-height:220px;overflow-y:auto;background:#12121a;border:1px solid var(--br);border-radius:6px;padding:6px 8px;z-index:40;box-shadow:0 10px 28px rgba(0,0,0,.5);font-variant-numeric:tabular-nums;font-size:10px;line-height:1.45;color:#c7d2fe}
+.ctk-wrap:hover .tick-tape,.tick-tape:hover{display:block}
+.tick-tape div{white-space:nowrap}
+.tick-tape .tick-empty{color:var(--t3)}
+.chart-dock .chart-head .cp{font-size:10px;font-weight:700;font-variant-numeric:tabular-nums;margin-left:2px}
+.chart-dock .chart-head select{background:var(--sf2);color:var(--t2);border:1px solid var(--br);border-radius:4px;font-size:10px;padding:2px 4px;font-family:inherit;outline:none}
+.chart-dock .chart-head button{background:transparent;border:1px solid var(--br);color:var(--t2);border-radius:4px;width:22px;height:22px;font-size:11px;cursor:pointer;font-family:inherit;line-height:1;padding:0}
+.chart-dock .chart-head button:hover{color:var(--t);border-color:var(--t3)}
+.chart-body{flex:1;min-height:0;position:relative;overflow:hidden;border-radius:0 0 10px 10px}
+.chart-empty{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--t3);font-size:10px;padding:12px;text-align:center}
+.chart-legend{display:flex;flex-wrap:wrap;gap:4px;padding:5px 8px;border-top:1px solid var(--br);flex-shrink:0;max-height:72px;overflow-y:auto}
+.chat-area.chart-max .chart-legend{display:none}
+.chart-plabel{position:absolute;left:4px;transform:translateY(-50%);font-size:9px;font-weight:700;padding:1px 5px;border-radius:3px;white-space:nowrap;z-index:13;pointer-events:none;text-shadow:0 1px 2px #000}
+.chart-plabel.buy{background:rgba(34,197,94,.22);color:#22c55e}
+.chart-plabel.sell{background:rgba(239,68,68,.22);color:#ef4444}
+.chart-plabel.sl{background:rgba(234,179,8,.22);color:#eab308}
+.chart-plabel.tp{background:rgba(99,102,241,.22);color:#a5b4fc}
+.chart-chip{font-size:9px;font-weight:700;font-variant-numeric:tabular-nums;padding:2px 6px;border-radius:4px;white-space:nowrap}
+.chart-chip.buy{background:rgba(34,197,94,.12);color:#22c55e}
+.chart-chip.sell{background:rgba(239,68,68,.12);color:#ef4444}
+.chart-chip.pos{background:rgba(99,102,241,.14);color:#a5b4fc}
+.chart-marks{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:12}
+.mover-ticker{display:none;align-items:center;gap:8px;padding:4px 8px 4px 6px;border-bottom:1px solid var(--br);background:rgba(99,102,241,.06);min-height:28px;flex-shrink:0}
+.mover-ticker.on{display:flex}
+.mover-refresh{flex-shrink:0;width:24px;height:24px;border:1px solid var(--br);border-radius:5px;background:var(--sf2);color:var(--t2);cursor:pointer;font-size:13px;line-height:1;font-family:inherit}
+.mover-refresh:hover{color:var(--t);border-color:var(--t3)}
+.mover-viewport{flex:1;overflow:hidden;min-width:0}
+.mover-track{display:flex;width:max-content;animation:mover-ltr 42s linear infinite;will-change:transform}
+.mover-viewport:hover .mover-track{animation-play-state:paused}
+.mover-seq{display:flex;align-items:center;flex-shrink:0}
+.mover-item{padding:0 16px;font-size:10px;color:var(--t2);white-space:nowrap;font-variant-numeric:tabular-nums}
+.mover-item b{color:var(--t);margin-right:4px}
+@keyframes mover-ltr{from{transform:translateX(-50%)}to{transform:translateX(0)}}
+@media (prefers-reduced-motion:reduce){.mover-track{animation:none}}
+.chart-tri{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;line-height:1;text-shadow:0 1px 2px #000}
+.chart-tri .arr{font-size:13px;font-weight:700}
+.chart-tri.small .arr{font-size:10px;opacity:.85}
+.chart-tri.pos .arr{font-size:16px}
+.chart-tri.buy{color:#22c55e}
+.chart-tri.sell{color:#ef4444}
+.chart-tri .pnl{font-size:9px;font-weight:700;margin-top:1px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.chat-area.chart-max .chart-dock{inset:8px;width:auto;height:auto;aspect-ratio:auto;top:8px;right:8px;left:8px;bottom:8px}
+.chat-area.chart-max .chat-msgs,.chat-area.chart-max .chat-input-bar,#voiceOverlay.chat-hide{display:none!important}
+@media(max-width:800px){.chart-dock{position:relative;top:auto;right:auto;width:100%;aspect-ratio:16/9;border-radius:0;border-left:none;border-right:none;box-shadow:none}}
+.chat-msgs{flex:1;overflow-y:auto;padding:12px 20px;scroll-behavior:smooth}
+.chat-msgs>*{max-width:760px;margin-left:auto;margin-right:auto}
+.chat-msgs .welcome{max-width:none}
+.welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--t3);gap:6px}
+
+/* Chat messages — flat full-width rows (Claude/ChatGPT style) */
+.msg{margin-bottom:4px;animation:slideUp .25s ease-out}
+@keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* Question — subtle right-aligned tinted block, no framing */
+.msg .q-row{display:flex;gap:8px;align-items:flex-start;justify-content:flex-end;padding:10px 0 6px}
+.msg .q-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;order:2;background:rgba(99,102,241,.16);color:#a5b4fc}
+.msg .q-text{order:1;max-width:78%;font-size:13.5px;line-height:1.55;color:var(--t);padding:9px 14px;border-radius:14px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.2);min-width:0}
+
+/* AI response — full-width flat row, left-aligned, no box */
+.msg .a-row{display:flex;gap:10px;align-items:flex-start;padding:6px 0 8px}
+.msg .a-icon{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:rgba(99,102,241,.1)}
+.msg .a-icon canvas{width:100%;height:100%;display:block;border-radius:7px}
+.msg .a-text{flex:1;font-size:13.5px;line-height:1.6;color:var(--t2);min-width:0}
+.msg .a-text strong{color:var(--t);font-weight:600}
+
+/* Streaming AI row — globe animation signals streaming; no rotating border */
+.msg .a-row.streaming .thinking-text{color:var(--t2);font-style:italic}
+.msg .meta-row{display:flex;gap:10px;justify-content:flex-end;padding:0 0 6px;margin-left:34px;font-size:10px;color:var(--t3)}
+
+/* Input bar */
+.chat-input-bar{padding:8px 12px;border-top:1px solid var(--br);background:var(--sf);flex-shrink:0}
+.chat-input-wrap{display:flex;gap:6px;background:var(--sf2);border:1px solid var(--br);border-radius:8px;padding:2px;transition:all .15s;align-items:flex-end}
+.chat-input-wrap:focus-within{border-color:var(--b)}
+.chat-input-wrap textarea{flex:1;background:transparent;border:none;color:var(--t);padding:5px 8px;font-size:13px;font-family:inherit;resize:none;outline:none;min-height:18px;max-height:60px}
+.chat-input-wrap .actions{display:flex;gap:2px;align-items:center;padding:2px}
+
+/* Bottom bar */
+.acct-bar{padding:4px 12px;background:var(--sf);border-top:1px solid var(--br);font-size:10px;color:var(--t2);display:flex;gap:12px;flex-shrink:0;overflow-x:auto}
+.acct-bar .bar-item{white-space:nowrap}
+.acct-bar .bar-dot{display:inline-block;width:5px;height:5px;border-radius:50%;margin-right:4px;vertical-align:middle}
+
+/* Toast */
+.toast{position:fixed;bottom:20px;right:20px;padding:8px 14px;border-radius:var(--border-rad);font-size:12px;font-weight:600;z-index:999;animation:slideUp .3s;max-width:340px;backdrop-filter:blur(8px)}
+.toast.success{background:rgba(34,197,94,.12);color:var(--g);border:1px solid rgba(34,197,94,.25)}
+.toast.error{background:rgba(239,68,68,.12);color:var(--r);border:1px solid rgba(239,68,68,.25)}
+
+/* Account cards */
+.acct-card{background:var(--sf2);border:1px solid var(--br);border-radius:var(--border-rad);padding:8px 10px;margin-bottom:5px;transition:all .2s}
+.acct-card:hover{border-color:rgba(255,255,255,.08)}
+.acct-card .acct-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;cursor:pointer}
+.acct-chev{margin-left:auto;font-size:10px;color:var(--t3);transition:transform .15s;user-select:none;flex-shrink:0}
+.acct-card.collapsed .acct-chev{transform:rotate(-90deg)}
+.acct-card.collapsed .acct-collapsible{display:none}
+.acct-card .acct-name{font-weight:600;font-size:11px}
+.acct-card .acct-env{padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700;text-transform:uppercase}
+.acct-env.live{background:rgba(16,185,129,.15);color:#10b981}
+.acct-env.demo{background:var(--y2);color:var(--y)}
+.acct-card .acct-grid{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.acct-card .acct-grid .metric{display:flex;justify-content:space-between;font-size:10px;padding:1px 0}
+.acct-card .acct-grid .metric .lbl{color:var(--t3)}
+.acct-card .acct-grid .metric .val{font-weight:600;font-variant-numeric:tabular-nums}
+.acct-card .acct-err,.acct-card .acct-ok{font-size:9px;padding:2px 0 0}
+.acct-err{color:var(--r)}.acct-ok{color:var(--g)}
+.acct-refresh{cursor:pointer;font-size:11px;opacity:.5;transition:opacity .15s;user-select:none;flex-shrink:0}
+.acct-refresh:hover{opacity:1}
+.acct-refresh.spinning{animation:spin .6s linear infinite;opacity:1}
+.sidebar-section h3 .acct-refresh{margin-left:4px}
+.acct-det{border-top:1px solid var(--br);margin-top:6px;padding-top:6px}
+.acct-det-title{font-size:8px;text-transform:uppercase;letter-spacing:.6px;color:var(--t3);margin:6px 0 2px;font-weight:700}
+.acct-tbl{width:100%;font-size:9px;border-collapse:collapse}
+.acct-tbl th{text-align:left;padding:2px 3px;color:var(--t3);font-weight:600;border-bottom:1px solid var(--br)}
+.acct-tbl td{padding:2px 3px;border-bottom:1px solid rgba(255,255,255,.03);font-variant-numeric:tabular-nums;white-space:nowrap}
+.acct-det-empty{font-size:9px;color:var(--t3);padding:2px 0}
+.acct-tbl-wrap{max-height:150px;overflow-y:auto}
+.btn-close-all{display:block;width:100%;margin-top:6px;padding:5px 8px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:var(--r);border-radius:5px;font-size:10px;font-weight:600;font-family:inherit;cursor:pointer;transition:all .15s}
+.btn-close-all:hover{background:rgba(239,68,68,.2)}
+.btn-close-all:disabled{opacity:.5;cursor:wait}
+
+/* Bot items */
+.bot-item{padding:8px 10px;border-radius:var(--border-rad);cursor:pointer;margin-bottom:2px;transition:all .2s;position:relative;background:var(--sf2);border:1px solid transparent}
+.bot-item:hover{border-color:var(--br)}
+.bot-item.chart-focus{border-color:var(--b);box-shadow:inset 2px 0 0 var(--b)}
+.bot-item .badge{position:absolute;top:6px;right:8px;padding:1px 5px;border-radius:3px;font-size:8px;font-weight:700}
+.bot-item .emoji{font-size:14px;margin-right:4px}
+.bot-item .name{font-weight:600;font-size:11px;margin-bottom:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:170px}
+.bot-item .detail{font-size:9px;color:var(--t3)}
+.bot-item .detail b{color:var(--t1);font-weight:700}
+.bot-detail{border-top:1px solid var(--br);margin-top:6px;padding-top:6px}
+.bot-detail table{width:100%;font-size:9px;border-collapse:collapse;margin-top:3px}
+.bot-detail table th{text-align:left;padding:2px 3px;color:var(--t3);font-weight:600;border-bottom:1px solid var(--br)}
+.bot-detail table td{padding:2px 3px;border-bottom:1px solid rgba(255,255,255,.03)}
+
+.hidden{display:none!important}
+.sidebar-footer .btn-settings{background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:1px 2px;transition:color .15s;margin-left:auto}
+.sidebar-footer .btn-settings:hover{color:var(--t)}
+
+/* Settings modal */
+.settings-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:flex-start;justify-content:flex-start;z-index:900;padding:0}
+.settings-panel{width:260px;background:var(--sf);border-right:1px solid var(--br);height:100%;padding:16px;overflow-y:auto;animation:slideRight .2s ease-out}
+@keyframes slideRight{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:translateX(0)}}
+.settings-select{width:100%;background:var(--sf2);color:var(--t);border:1px solid var(--br);border-radius:6px;padding:7px 9px;font-size:12px;outline:none;font-family:inherit}
+.settings-select:focus{border-color:var(--b)}
+.set-section{border-bottom:1px solid var(--br);margin-bottom:10px}
+.set-head{display:flex;align-items:center;justify-content:space-between;padding:8px 2px;cursor:pointer;font-size:11px;font-weight:600;color:var(--t);user-select:none}
+.set-head:hover{color:var(--b)}
+.set-chev{font-size:10px;color:var(--t3);transition:transform .15s}
+.set-section:not(.collapsed) .set-chev{transform:rotate(90deg)}
+.set-body{padding:4px 2px 12px}
+.set-section.collapsed .set-body{display:none}
+.chatter-card{margin:0 10px 6px;background:var(--sf2);border:1px solid var(--br);border-radius:6px;overflow:hidden;flex-shrink:0}
+.chatter-head{display:flex;align-items:center;gap:6px;padding:5px 8px;cursor:pointer;user-select:none;border-bottom:1px solid var(--br)}
+.chatter-head:hover{background:rgba(255,255,255,.02)}
+.chatter-ticker{white-space:nowrap;overflow:hidden;padding:6px 10px;font-size:11px;letter-spacing:.2px;color:var(--t2);border-bottom:1px solid var(--br);position:relative;-webkit-mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent);mask-image:linear-gradient(90deg,transparent,#000 5%,#000 95%,transparent)}
+.chatter-ticker .chatter-track{display:inline-flex;white-space:nowrap;will-change:transform}
+.chatter-ticker.scrolling .chatter-track{animation:ticker linear infinite}
+.chatter-ticker.paused .chatter-track,.chatter-ticker:hover .chatter-track{animation-play-state:paused}
+.chatter-ticker .tick{display:inline-block;padding-right:26px}
+@keyframes ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+.chatter-list{max-height:0;overflow:hidden;transition:max-height .25s}
+.chatter-list.open{max-height:190px;overflow-y:auto}
+.chatter-item{display:flex;gap:6px;padding:4px 8px;font-size:10px;color:var(--t2);border-bottom:1px solid rgba(255,255,255,.03);line-height:1.4}
+.chatter-item .ct{color:var(--t3);flex-shrink:0}
+.chatter-item .cs{color:var(--b);font-weight:700;flex-shrink:0;max-width:70px;overflow:hidden;text-overflow:ellipsis}
+.chatter-sum{display:flex;align-items:center;gap:6px;padding:5px 8px;background:var(--g2);font-size:10px;color:var(--g);border-bottom:1px solid var(--br);line-height:1.4}
+.chatter-sumbtn{margin-left:auto;background:rgba(99,102,241,.14);border:1px solid rgba(99,102,241,.35);color:#a5b4fc;font:10px monospace;padding:2px 8px;border-radius:4px;cursor:pointer;flex-shrink:0}
+.chatter-sumbtn:disabled{opacity:.4;cursor:wait}
+@media(max-width:800px){.sidebar{display:none}.spawn-form{flex-direction:column;align-items:stretch}}
+html[data-desk="mt5"] #formBinance{display:none!important}
+html[data-desk="binance"] #formBinance,html:not([data-desk]) #formBinance{display:flex!important}
+html[data-desk="mt5"] #formMt5{display:flex!important}
+</style>
+<script>
+(function(){
+  var p='binance';
+  try{
+    var q=(new URLSearchParams(location.search||'')).get('desk');
+    var s=sessionStorage.getItem('gb.dashboard.desk');
+    var l=localStorage.getItem('gb.dashboard.platform');
+    p=q||s||l||'binance';
+  }catch(e){}
+  if(!/^(binance|mt5)$/.test(p))p='binance';
+  document.documentElement.setAttribute('data-desk',p);
+  try{sessionStorage.setItem('gb.dashboard.desk',p)}catch(e){}
+  try{document.title='GB · '+(p==='mt5'?'MT5':'Binance')}catch(e){}
+  document.addEventListener('DOMContentLoaded',function(){
+    var titles={binance:'Binance',mt5:'MT5'};
+    var subs={binance:'USDT-M futures',mt5:'FTMO / EA'};
+    var t=document.getElementById('workspaceTitle');if(t)t.textContent=titles[p]||'Binance';
+    var s=document.getElementById('workspaceSub');if(s)s.textContent=subs[p]||'';
+    var sw=document.getElementById('platSwitch');if(sw)sw.value=p;
+    document.body.setAttribute('data-platform',p);
+  });
+})();
+</script>
+</head><body>
+<div class="app">
+  <div class="sidebar">
+    <div class="sidebar-header">
+      <div class="gradient-ring"><div class="inner">G</div></div><h2>GBV4</h2>
+      <div class="live-dot" id="liveDot" style="background:var(--g)"></div>
+    </div>
+    <div class="sidebar-scroll">
+      <div id="accountsSection"></div>
+      <div class="sidebar-section"><h3><span class="accent" style="background:var(--b)"></span>ACTIVE BOTS</h3></div>
+      <div class="sidebar-bots" id="botList"><div style="padding:20px;color:var(--t3);text-align:center;font-size:12px">⟳ Loading...</div></div>
+    </div>
+    <div class="sidebar-footer"><span id="bootMode">Boot: --</span><span id="botCount">0 bots</span><button class="btn-settings" onclick="toggleSettings()" title="Settings">⚙</button></div>
+  </div>
+
+  <div class="main">
+    <div class="workspace-bar">
+      <span class="ws-name" id="workspaceTitle">GB</span>
+      <span class="ws-sub" id="workspaceSub">this desk only</span>
+      <select id="platSwitch" onchange="applyWorkspace(this.value)" title="Switch platform">
+        <option value="binance">Binance</option>
+        <option value="mt5">MT5</option>
+      </select>
+      <script>
+      (function(){
+        var p=document.documentElement.getAttribute('data-desk')||'binance';
+        var titles={binance:'Binance',mt5:'MT5'};
+        var subs={binance:'USDT-M futures',mt5:'FTMO / EA'};
+        var t=document.getElementById('workspaceTitle');if(t)t.textContent=titles[p]||'Binance';
+        var s=document.getElementById('workspaceSub');if(s)s.textContent=subs[p]||'';
+        var sw=document.getElementById('platSwitch');if(sw)sw.value=p;
+        document.body.setAttribute('data-platform',p);
+      })();
+      </script>
+    </div>
+    <div class="tab-bar" aria-hidden="true">
+      <button class="tab-btn active" id="tabBinance" onclick="switchTab('binance')">Binance</button>
+      <button class="tab-btn" id="tabMt5" onclick="switchTab('mt5')">MT5</button>
+    </div>
+
+    <div class="spawn-form visible" id="formBinance">
+      <input id="sn" placeholder="Name" value="BOT" style="width:44px"/>
+      <div class="combo" id="ssCombo">
+        <input id="ss" placeholder="Search symbol…" autocomplete="off" value="XAUUSDT"/>
+        <div class="combo-list" id="ssList"></div>
+      </div>
+      <select id="sf"><option value="taker">Taker</option><option value="maker">Maker</option></select>
+      <select id="senv"><option value="live" selected>LIVE</option><option value="demo">DEMO</option></select>
+      <label class="fld" title="Grid mode: scalp (tight, fast TP), swing (wide, 2.5x TP, 24h holds), auto (ADX regime picks per symbol)"><span>Mode</span><select id="gridMode" onchange="onGridModeChange(this.value)" style="width:70px"><option value="scalp" selected>Scalp</option><option value="swing">Swing</option><option value="auto">Auto</option></select></label>
+      <label class="prop-chk" title="Compound: per-leg = 2% of live equity (grows/shrinks with account). Default ON."><input type="checkbox" id="compoundChk" checked onchange="onCompoundChange(this.checked)"><span>comp</span></label>
+      <label class="fld" title="Compound fraction of equity per leg"><select id="compoundFrac" onchange="onCompoundFracChange(this.value)" style="width:56px"><option value="0.02" selected>2%</option><option value="0.05">5%</option></select></label>
+      <label class="fld" title="Volume % of available funds for this grid (10-100% global, default 50% → 0.5$ per 1% on 25$)"><span>Vol %</span><input id="spawnVol" type="range" min="10" max="100" step="5" value="50" style="width:74px;accent-color:var(--b)" oninput="onSpawnVolChange(this.value)"><span id="spawnVolVal" style="font-size:10px;color:var(--t2);min-width:28px;text-align:right">50%</span></label>
+      <label class="fld" title="Max wallet use % — caps total fleet margin at this share of free margin (separate from Vol % which sizes each level)"><span>Wallet %</span><input id="spawnWallet" type="range" min="10" max="100" step="5" value="70" style="width:74px;accent-color:var(--b)" oninput="onSpawnWalletChange(this.value)"><span id="spawnWalletVal" style="font-size:10px;color:var(--t2);min-width:28px;text-align:right">70%</span></label>
+      <label class="fld" title="Leverage for every spawn/GuruAI grid (MAX = per-symbol bracket ceiling; falls back to symbol max then 10x if unavailable)"><span>Lev</span><select id="spawnLev" onchange="onSpawnLevChange(this.value)" style="width:62px"><option value="MAX">MAX</option><option value="5">5x</option><option value="10" selected>10x</option><option value="25">25x</option><option value="50">50x</option><option value="75">75x</option><option value="100">100x</option></select></label>
+      <button class="btn btn-primary" onclick="spawnBinance()" style="background:var(--b);color:#fff;padding:5px 12px;border:none;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">＋ Spawn</button>
+      <div class="stepper" title="GuruAI bots (1–10)">
+        <button type="button" onclick="guruN(-1)">−</button>
+        <span id="guruNVal">10</span>
+        <button type="button" onclick="guruN(1)">+</button>
+      </div>
+      <button class="btn btn-ghost" id="guruBtn" onclick="startGuruAI()" style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">🧠 GuruAI</button>
+      <button class="btn btn-ghost" id="btBtn" onclick="startBacktest()" title="Offline grid replay: math+gates only (JEV only for 1W). Read-only, touches nothing live." style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">📊 Backtest</button>
+      <label class="fld" title="Backtest horizon (JEV only for 1W, pure math beyond)"><select id="btHorizon" style="width:64px"><option value="1W" selected>1 week</option><option value="2W">2 weeks</option><option value="3W">3 weeks</option><option value="4W">4 weeks</option><option value="1M">1 month</option><option value="2M">2 months</option><option value="3M">3 months</option><option value="5M">5 months</option><option value="6M">6 months</option></select></label>
+      <label class="fld" title="Backtest per-level notional USD"><span>$</span><input id="btSize" type="number" min="5" step="5" value="1000" style="width:58px"></label>
+      <label class="fld" title="Backtest starting account equity USD (liquidation floor)"><span>Eq$</span><input id="btEquity" type="number" min="10" step="10" value="10000" style="width:62px"></label>
+      <button class="btn" id="killBtn" onclick="killSwitch()" title="EMERGENCY: stop all bots, cancel all orders, close all positions" style="background:#e5484d;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-weight:700;font-size:11px;font-family:inherit;cursor:pointer">🛑 KILL</button>
+      <label class="prop-chk" title="Prop-firm challenge discipline: Friday-flat + news blackout (GB_NEWS_EVENTS). Blocks spawns and flattens into weekends/news."><input type="checkbox" id="propMode" onchange="onPropModeChange(this.checked)"><span>prop</span></label>
+    </div>
+    <div id="btResult" style="display:none;font-size:11px;color:var(--t2);padding:6px 8px;border:1px solid var(--br);border-radius:6px;margin:4px 0"></div>
+    <div id="propPanel" style="display:none;font-size:11px;padding:6px 8px;border:1px solid rgba(212,160,23,.4);border-radius:6px;margin:4px 0;background:rgba(212,160,23,.06)">
+      <b style="color:#d4a017">🛡 PROP · Maven $10K Evaluation</b>
+      <span id="propBody" style="color:var(--t2)">loading…</span>
+    </div>
+
+
+    <div class="spawn-form" id="formMt5">
+      <label class="fld"><span>Name</span><input id="mt5Name" value="MT5" placeholder="MT5"/></label>
+      <div class="combo" id="mt5SymCombo">
+        <input id="mt5Sym" placeholder="Search MT5 symbols…" autocomplete="off" autocapitalize="off" spellcheck="false" value="XAUUSD"/>
+        <div class="combo-list" id="mt5SymList"></div>
+      </div>
+      <span id="mt5SymStatus" style="font-size:10px;font-weight:700;color:var(--t3)">·</span>
+      <button class="btn btn-primary" onclick="spawnMt5()" style="background:#d4a017;color:#1a1a1a;padding:5px 12px;border:none;border-radius:5px;font-weight:700;font-size:11px;font-family:inherit;cursor:pointer">＋ Spawn</button>
+      <label class="prop-chk" title="Prop-firm daily/overall loss, profit bank, consecutive-loss breaker. Off = clean GuruAI.">
+        <input type="checkbox" id="mt5Ftmo" checked/>
+        <span>proprules</span>
+      </label>
+      <button class="btn btn-ghost" id="mt5GuruBtn" onclick="startMt5Guru()" style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">🧠 GuruAI</button>
+      <button class="btn btn-ghost" id="btBtnM" onclick="startBacktest()" title="Offline grid replay: math+gates only (JEV only for 1W). Read-only." style="background:transparent;color:var(--t2);border:1px solid var(--br);padding:5px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer">📊 Backtest</button>
+      <label class="fld" title="Backtest horizon (JEV only for 1W, pure math beyond)"><select id="btHorizonM" style="width:64px"><option value="1W" selected>1 week</option><option value="2W">2 weeks</option><option value="3W">3 weeks</option><option value="4W">4 weeks</option><option value="1M">1 month</option><option value="2M">2 months</option><option value="3M">3 months</option><option value="5M">5 months</option><option value="6M">6 months</option></select></label>
+      <label class="fld" title="Backtest per-level notional USD"><span>$</span><input id="btSizeM" type="number" min="5" step="5" value="1000" style="width:58px"></label>
+      <label class="fld" title="Backtest starting account equity USD"><span>Eq$</span><input id="btEquityM" type="number" min="10" step="10" value="10000" style="width:62px"></label>
+      <button class="btn" id="mt5KillBtn" onclick="killMt5()" title="EMERGENCY: close all MT5 positions, cancel all orders, stop GuruAI" style="background:#e5484d;color:#fff;border:none;padding:5px 12px;border-radius:5px;font-weight:700;font-size:11px;font-family:inherit;cursor:pointer">🛑 KILL</button>
+      <span id="mt5ConnBadge" style="font-size:10px;font-weight:700;color:var(--t3)"></span>
+    </div>
+    <div id="btResultM" style="display:none;font-size:11px;color:var(--t2);padding:6px 8px;border:1px solid var(--br);border-radius:6px;margin:4px 0"></div>
+    <div id="mt5InfoBar" style="display:none;background:rgba(212,160,23,.1);border:1px solid rgba(212,160,23,.35);padding:6px 12px;font-size:11px;color:var(--t2)"></div>
+
+    <div id="moverTicker" class="mover-ticker" aria-label="10-minute movers">
+      <button type="button" class="mover-refresh" id="moverRefresh" title="Refresh 10-min movers" onclick="refreshMovers()">↻</button>
+      <div class="mover-viewport"><div class="mover-track" id="moverTrack"></div></div>
+    </div>
+
+    <div class="chat-area chart-max" id="chatArea">
+      <div class="chart-dock" id="chartDock">
+        <div class="chart-head">
+          <span class="cs" id="chartSym">—</span>
+          <span class="ctk-wrap" id="chartTickWrap" title="Hover: last-second prints">
+            <span class="ctk" id="chartTick"></span>
+            <div class="tick-tape" id="chartTickTape"><div class="tick-empty">no prints this second</div></div>
+          </span>
+          <span class="cp" id="chartPnl"></span>
+          <select id="chartTf" onchange="loadDeskChart()" title="Timeframe">
+            <option value="1s">1s</option>
+            <option value="1m" selected>1m</option>
+            <option value="5m">5m</option>
+            <option value="15m">15m</option>
+            <option value="1h">1h</option>
+            <option value="4h">4h</option>
+          </select>
+          <button type="button" id="chartMaxBtn" onclick="toggleChartMax()" title="Minimize chart to corner">✕</button>
+        </div>
+        <div class="chart-body">
+          <div id="tvChart" style="width:100%;height:100%"></div>
+          <div class="chart-marks" id="chartMarks"></div>
+          <div class="chart-empty" id="chartEmpty">No candles in memory yet</div>
+        </div>
+        <div class="chart-legend" id="chartLegend"></div>
+      </div>
+      <div class="chat-msgs hermes-feed" id="chatMsgs"><div class="welcome"><div style="font-size:32px;opacity:.2">🛰️</div><p><b style="color:var(--t2)">Activity feed</b> — live status, fills & risk events from your bots. Hover or touch to pause the scroll.</p></div></div>
+
+      <div id="voiceOverlay" style="display:none;background:var(--sf);border-top:1px solid var(--br);padding:8px 12px;flex-shrink:0">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <div style="width:5px;height:5px;border-radius:50%;background:var(--r);animation:pulse 1s infinite"></div>
+            <span style="font-size:10px;color:var(--t2);font-weight:600">LISTENING</span>
+          </div>
+          <button onclick="toggleVoice()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:12px;padding:1px">✕</button>
+        </div>
+        <div id="voiceWaveform" style="display:flex;align-items:center;gap:2px;height:24px;margin-bottom:3px">
+          <script>for(var i=0;i<48;i++)document.write('<div class="vw-bar" id="vw'+i+'" style="flex:1;height:3px;background:var(--b);border-radius:2px;opacity:.3;transition:height .08s,opacity .08s"></div>');</script>
+        </div>
+        <div id="voiceTranscript" style="font-size:11px;color:var(--t2);min-height:14px">Listening...</div>
+      </div>
+
+      <div class="chat-input-bar" id="chatInputBar" style="display:none">
+        <div class="chat-input-wrap">
+          <textarea id="ci" placeholder="Message HERMES — your account, markets, trades…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMsg()}"></textarea>
+          <div class="actions">
+            <button class="btn-icon" onclick="clearChat()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;padding:3px;font-size:11px">🗑️</button>
+            <button class="btn-icon" id="mic" onclick="toggleVoice()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;padding:3px;font-size:11px">🎤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="acct-bar" id="acctBar"></div>
+  </div>
+</div>
+
+<!-- Settings modal -->
+<div id="settingsOverlay" class="settings-overlay hidden" onclick="if(event.target===this)toggleSettings()">
+  <div class="settings-panel">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <h3 style="font-size:14px;color:var(--t)">⚙ Settings</h3>
+      <button onclick="toggleSettings()" style="background:transparent;border:none;color:var(--t3);cursor:pointer;font-size:15px">✕</button>
+    </div>
+
+    <div class="set-section collapsed">
+      <div class="set-head" onclick="toggleSet(this)"><span>🎤 Voice</span><span class="set-chev">▸</span></div>
+      <div class="set-body">
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:5px">Voice Language</label>
+        <select id="voiceGroup" class="settings-select" onchange="onVoiceGroupChange()"></select>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:12px 0 5px">Voice</label>
+        <select id="voiceSelect" class="settings-select" onchange="onVoiceChange()"></select>
+        <div id="voicePreview" style="margin-top:12px;font-size:12px;color:var(--t2);background:var(--sf2);border:1px solid var(--br);border-radius:8px;padding:8px 10px"></div>
+        <button onclick="saveVoice()" style="margin-top:10px;background:var(--b2);color:var(--b);border:1px solid var(--b);padding:6px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer;width:100%">💾 Save Voice</button>
+      </div>
+    </div>
+
+    <div class="set-section collapsed" data-plat="binance">
+      <div class="set-head" onclick="toggleSet(this)"><span>₿ Binance API Keys</span><span class="set-chev">▸</span></div>
+      <div class="set-body">
+        <div style="font-size:9px;color:var(--t3);line-height:1.4;margin-bottom:10px">Your own Binance keys — saved only on this server (local SQLite, never leaves your machine).</div>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Live API Key</label>
+        <input id="binanceLiveKey" type="password" class="settings-select" placeholder="Binance LIVE api_key" autocomplete="off"/>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:8px 0 4px">Live API Secret</label>
+        <input id="binanceLiveSecret" type="password" class="settings-select" placeholder="Binance LIVE api_secret" autocomplete="off"/>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:8px 0 4px">Demo API Key</label>
+        <input id="binanceDemoKey" type="password" class="settings-select" placeholder="Binance DEMO api_key" autocomplete="off"/>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:8px 0 4px">Demo API Secret</label>
+        <input id="binanceDemoSecret" type="password" class="settings-select" placeholder="Binance DEMO api_secret" autocomplete="off"/>
+        <button onclick="saveBinanceKeys()" style="margin-top:10px;background:var(--b2);color:var(--b);border:1px solid var(--b);padding:6px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer;width:100%">💾 Save Binance Keys</button>
+      </div>
+    </div>
+
+    <div class="set-section collapsed">
+      <div class="set-head" onclick="toggleSet(this)"><span>🧠 OpenRouter AI Screening</span><span class="set-chev">▸</span></div>
+      <div class="set-body">
+        <div style="font-size:9px;color:var(--t3);line-height:1.4;margin-bottom:10px">Your own OpenRouter key — optional. Powers AI screening (entry veto, unwind votes). Empty = math-only mode, strategy still trades. Get a key at openrouter.ai/keys.</div>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">API Key <span id="orKeyState" style="text-transform:none"></span></label>
+        <input id="orKey" type="password" class="settings-select" placeholder="sk-or-v1-…" autocomplete="off"/>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:8px 0 4px">Model</label>
+        <input id="orModel" type="text" class="settings-select" placeholder="e.g. anthropic/claude-3.5-haiku" autocomplete="off" autocapitalize="off" spellcheck="false"/>
+        <button onclick="saveOpenRouter()" style="margin-top:10px;background:var(--b2);color:var(--b);border:1px solid var(--b);padding:6px 12px;border-radius:5px;font-weight:600;font-size:11px;font-family:inherit;cursor:pointer;width:100%">💾 Save AI Settings</button>
+      </div>
+    </div>
+
+
+    <div class="set-section collapsed" data-plat="mt5">
+      <div class="set-head" onclick="toggleSet(this)"><span>🟡 MT5 Bridge</span><span class="set-chev">▸</span></div>
+      <div class="set-body">
+        <div style="font-size:9px;color:var(--t3);line-height:1.4;margin-bottom:10px">Attach the EA (ea/HybridGB_EA.mq5) to an MT5 chart, then paste these two values into the EA inputs. Same token = your account.</div>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Connection <span id="mt5SettingsBadge" style="color:var(--t3)">—</span></label>
+        <div id="mt5AccountCard" style="font-size:10px;color:var(--t2);background:var(--sf2);border:1px solid var(--br);border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5">Not connected</div>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">EA AuthToken</label>
+        <div style="display:flex;gap:5px">
+          <input id="mt5Token" type="text" class="settings-select" readonly placeholder="generate →"/>
+          <button onclick="genMt5Token()" style="background:var(--b2);color:var(--b);border:1px solid var(--b);padding:6px 10px;border-radius:5px;font-weight:600;font-size:10px;font-family:inherit;cursor:pointer;white-space:nowrap">Generate</button>
+          <button onclick="copyMt5Token()" style="background:var(--sf2);color:var(--t);border:1px solid var(--br);padding:6px 10px;border-radius:5px;font-size:10px;font-family:inherit;cursor:pointer">📋</button>
+        </div>
+        <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:10px 0 4px">EA ServerURL (input 1)</label>
+        <div style="display:flex;gap:5px">
+        <input id="mt5ServerUrl" type="text" class="settings-select" placeholder="https://<tunnel>/api/mt5"/>
+        <button onclick="fillMt5ServerUrl()" title="Fill with the currently connected trading server URL" style="background:var(--sf2);color:var(--t);border:1px solid var(--br);padding:6px 10px;border-radius:5px;font-size:10px;font-family:inherit;cursor:pointer;white-space:nowrap">Use current</button>
+        <button onclick="copyMt5ServerUrl()" style="background:var(--sf2);color:var(--t);border:1px solid var(--br);padding:6px 10px;border-radius:5px;font-size:10px;font-family:inherit;cursor:pointer">📋</button>
+        </div>
+        <div style="font-size:8px;color:var(--t3);margin:4px 0 8px">Also add this URL to MT5 ▸ Tools ▸ Options ▸ Expert Advisors ▸ Allow WebRequest.</div>
+        <div style="display:flex;gap:5px;margin-top:10px">
+          <button onclick="testMt5Connection()" style="flex:1;background:var(--b2);color:var(--b);border:1px solid var(--b);padding:6px 10px;border-radius:5px;font-weight:600;font-size:10px;font-family:inherit;cursor:pointer">🔌 Test Connection</button>
+          <button onclick="resetMt5Token()" style="background:var(--sf2);color:var(--r);border:1px solid var(--br);padding:6px 10px;border-radius:5px;font-size:10px;font-family:inherit;cursor:pointer;white-space:nowrap">♻ Reset Token</button>
+        </div>
+      </div>
+    </div>
+
+
+    <hr style="border:none;border-top:1px solid var(--br);margin:16px 0"/>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <span id="loggedInUser" style="font-size:10px;color:var(--t2)"></span>
+      <button onclick="doLogout()" style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.35);color:var(--r);padding:4px 10px;border-radius:5px;font-size:10px;font-weight:600;font-family:inherit;cursor:pointer">Sign out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Login modal — own stacking context so settings sidebar cannot eat desk clicks -->
+<div id="loginOverlay" class="login-overlay hidden">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:28px">🧠</div>
+      <h3 style="font-size:15px;color:var(--t);margin-top:4px">GB Command Center</h3>
+      <div style="font-size:10px;color:var(--t3);margin-top:2px">This tab only — other tabs keep their own login and desk</div>
+    </div>
+    <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Desk</label>
+    <select id="loginPlatSelect" class="settings-select" style="margin-bottom:8px">
+      <option value="binance">Binance — USDT-M futures</option>
+      <option value="mt5">MT5 — FTMO / EA</option>
+    </select>
+    <div class="plat-grid" id="loginPlatPick">
+      <button type="button" class="plat-card" data-plat="binance">Binance<span>USDT-M futures</span></button>
+      <button type="button" class="plat-card" data-plat="mt5">MT5<span>FTMO / EA</span></button>
+    </div>
+    <div id="loginPlatHint" style="font-size:10px;color:var(--t3);margin:6px 0 2px">Selected: Binance</div>
+    <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:12px 0 4px">Email</label>
+    <input id="loginEmail" type="email" class="settings-select" placeholder="you@example.com" autocomplete="email"/>
+    <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin:10px 0 4px">Password</label>
+    <input id="loginPassword" type="password" class="settings-select" placeholder="••••••••" autocomplete="current-password"/>
+    <button type="button" id="loginBtn" style="margin-top:14px;background:var(--b);color:#fff;border:none;padding:8px 12px;border-radius:6px;font-weight:600;font-size:12px;font-family:inherit;cursor:pointer;width:100%">Sign in</button>
+    <div style="text-align:center;margin-top:10px"><a href="#" onclick="changeServer();return false" style="font-size:10px;color:var(--t3);text-decoration:underline">Change trading server</a></div>
+  </div>
+</div>
+
+<!-- Server connection modal — health-check gate before login -->
+<div id="serverOverlay" class="login-overlay hidden">
+  <div class="login-card">
+    <div style="text-align:center;margin-bottom:16px">
+      <div style="font-size:28px">🔌</div>
+      <h3 style="font-size:15px;color:var(--t);margin-top:4px">Connect to trading server</h3>
+      <div id="serverModalMsg" style="font-size:10px;color:var(--t3);margin-top:4px"></div>
+    </div>
+    <label style="font-size:10px;color:var(--t3);text-transform:uppercase;letter-spacing:.6px;display:block;margin-bottom:4px">Server address</label>
+    <input id="serverUrlInput" type="text" class="settings-select" placeholder="https://your-server:9100" autocapitalize="off" autocorrect="off" spellcheck="false" onkeydown="if(event.key==='Enter')testServerUrl()"/>
+    <button type="button" id="serverTestBtn" onclick="testServerUrl()" style="margin-top:12px;background:var(--b);color:#fff;border:none;padding:8px 12px;border-radius:6px;font-weight:600;font-size:12px;font-family:inherit;cursor:pointer;width:100%">Test connection</button>
+    <div id="serverUrlStatus" style="font-size:10px;color:var(--t2);margin-top:8px;text-align:center;min-height:14px"></div>
+  </div>
+</div>
+<script src="/lightweight-charts.js"></script>
+<script type="module" src="/main.js?v=20260902d"></script></body></html>

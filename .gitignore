@@ -218,3 +218,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# HybridGB Open — secrets & local state (never commit)
+/.env
+.env.*
+*.db
+*.db-*
+*.sqlite3
+hybrid_gb.db*
+hybrid_chat.db*
+data/
+logs/
+*.log
+*.pid
+*.pem
+*.key
+tunnel.url
+__pycache__/

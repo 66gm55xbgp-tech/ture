@@ -1,0 +1,30 @@
+# JEV-PORTFOLIO v1.0 — Maven $10K evaluation risk profile.
+# STRATEGY parameters are NOT here (see strategy_core.py, FROZEN).
+# Everything below is PORTFOLIO SAFETY / account-risk configuration and may be
+# tuned without touching the frozen strategy. Official Maven limits are inputs;
+# buffers below them are our own safety margins. Re-check against the current
+# Maven rulebook before going live — daily/consistency rules change.
+mode: prop
+prop_firm: maven
+prop:
+  enabled: true
+  firm: maven
+  account_size: 10000
+  profit_target: 400
+  max_drawdown: 1000
+  # Set from the CURRENT Maven rulebook at deploy time; null = monitor only.
+  daily_drawdown: null
+  consistency_rule: null
+  # Safety buffers as fractions of max_drawdown (act BEFORE the official limit):
+  warn_dd_frac: 0.30     # WARNING at $300 DD
+  soft_dd_frac: 0.50     # stop NEW entries at $500 DD
+  hard_dd_frac: 0.75     # flatten + halt at $750 DD (never ride to $1000)
+  # Portfolio floating-heat governor ($ open P&L across ETH+BTC+XAU):
+  warn_float: 300.0
+  soft_float: 400.0
+  hard_float: 500.0
+# Crypto heat monitor (ETH+BTC corr +0.52 in validation):
+heat:
+  pair_warn: 250.0
+  pair_halt: 350.0
+  xau_warn: 150.0
