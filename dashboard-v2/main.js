@@ -615,6 +615,13 @@ window.killSwitch=async function(){
 };
 
 
+window.toggleSettings=function(){
+  var o=$('settingsOverlay');
+  if(!o)return;
+  var showing=!o.classList.contains('hidden');
+  o.classList.toggle('hidden',showing);
+  if(!showing){refreshOpenRouterState()}
+};
 window.toggleSet=function(el){
   var sec=el.closest('.set-section');
   if(sec)sec.classList.toggle('collapsed')
