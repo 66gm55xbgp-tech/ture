@@ -39,8 +39,8 @@ import urllib.request
 from datetime import datetime, timezone
 
 try:
-    from dotenv import load_dotenv
-    load_dotenv()
+    from dotenv import load_dotenv as _ld
+    _ld(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 except Exception:
     pass
 

@@ -8,7 +8,7 @@ import threading
 from typing import Dict, Optional, Union
 
 # Load .env BEFORE any scanning
-from dotenv import load_dotenv; load_dotenv()
+from dotenv import load_dotenv as _ld; _ld(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse, StreamingResponse, HTMLResponse, Response
@@ -244,7 +244,7 @@ def _fetch_account_raw(env: str = None, user_id: str = None):
     if _last_account_fetch > 0 and time.time() - _last_account_fetch < 30 and cache_key in _account_cache:
         return _account_cache[cache_key]
     try:
-        from dotenv import load_dotenv; load_dotenv()
+        from dotenv import load_dotenv as _ld; _ld(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
         from binance.client import Client
         try:
             import local_store

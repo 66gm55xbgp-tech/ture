@@ -191,7 +191,7 @@ class AccountScanner:
             acct.error = f"rate-limited (ban ~{_banned():.0f}s)"
             acct.connected = False
             return
-        from dotenv import load_dotenv; load_dotenv()
+        from dotenv import load_dotenv as _ld; _ld(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
         from binance.client import Client
         # local keys (Settings UI / env) take precedence; fall back to .env
         try:
@@ -382,7 +382,7 @@ def _fetch_user_accounts(user_id: str) -> List[dict]:
 def close_all_binance(env: str = "live", user_id: str = None) -> dict:
     """Close ALL futures positions + cancel ALL open orders + conditional (algo)
     orders on Binance. Returns {"positions", "orders", "conditional"} counts."""
-    from dotenv import load_dotenv; load_dotenv()
+    from dotenv import load_dotenv as _ld; _ld(os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env"))
     from binance.client import Client
     try:
         import local_store
