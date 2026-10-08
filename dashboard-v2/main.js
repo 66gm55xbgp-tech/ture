@@ -1185,7 +1185,7 @@ window.toggleVoice=function(){
     if(overlay)overlay.style.display='none';stopVis();return
   }
   if(!window.isSecureContext){
-    toast('🔒 Voice needs HTTPS. Add http://34.146.199.62:9100 to chrome://flags/#unsafely-treat-insecure-origin-as-secure','error');
+    toast('🔒 Voice needs HTTPS. Add http://localhost:9100 to chrome://flags/#unsafely-treat-insecure-origin-as-secure','error');
     return
   }
   if(!navigator.onLine){

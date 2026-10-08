@@ -1830,7 +1830,7 @@ async def chat(request: ChatRequest, req: Request):
             },
             headers={
                 "Authorization": f"Bearer {os.getenv('DEEPSEEK_API_KEY', '')}",
-                "HTTP-Referer": "http://34.146.199.62:9100",
+                "HTTP-Referer": "http://localhost:9100",
                 "X-Title": "gb-api",
             },
             timeout=20,
@@ -1902,7 +1902,7 @@ async def chat_stream(request: ChatRequest, req: Request):
                     json=body,
                     headers={
                         "Authorization": f"Bearer {os.getenv('DEEPSEEK_API_KEY', '')}",
-                        "HTTP-Referer": "http://34.146.199.62:9100",
+                        "HTTP-Referer": "http://localhost:9100",
                         "X-Title": "gb-api",
                     },
                 ) as resp:

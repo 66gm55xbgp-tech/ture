@@ -193,7 +193,7 @@ def summarize(platform: str, minutes: int = 30) -> dict:
                 "max_tokens": 300,
             },
             headers={"Authorization": f"Bearer {key}",
-                     "HTTP-Referer": "http://34.146.199.62:9100", "X-Title": "gb-api"},
+                     "HTTP-Referer": "http://localhost:9100", "X-Title": "gb-api"},
             timeout=25,
         )
         r.raise_for_status()

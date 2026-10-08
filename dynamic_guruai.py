@@ -77,12 +77,12 @@ INITIAL_ANCHOR_SKIP = os.getenv("GURU_DYN_INITIAL_ANCHOR_SKIP", "1") == "1"
 BIAS_MIN_DWELL_SEC = float(os.getenv("GURU_BIAS_MIN_DWELL_SEC", "600"))
 
 # ── LLM layer ───────────────────────────────────────────────────────────────
-# Provider: "openrouter" (current default) or "deepseek" (official API,
-# cheaper + no routing hop — enabled later by env once the DeepSeek account
-# has balance). Keys: OPENROUTER_LLM_KEY / DEEPSEEK_API_KEY.
+# Provider: openrouter only in this build (single LLM path — the user's own
+# OpenRouter key + model from Settings, or OPENROUTER_API_KEY / OPENROUTER_MODEL
+# env). No other provider endpoints are called.
 LLM_ENABLED = os.getenv("GURU_LLM", "1") == "1"
-LLM_PROVIDER = os.getenv("GURU_LLM_PROVIDER", "openrouter").strip().lower()
-LLM_MODEL = os.getenv("GURU_LLM_MODEL", "")  # "" = provider default
+LLM_PROVIDER = "openrouter"
+LLM_MODEL = os.getenv("GURU_LLM_MODEL", "")  # "" = Settings choice or provider default
 LLM_CONF_MIN = float(os.getenv("GURU_LLM_CONF_MIN", "0.7"))
 LLM_EFFORT = os.getenv("GURU_LLM_EFFORT", "low")  # reasoning effort (low/high/max)
 # While bias == neutral the LLM used to be consulted every 60s scan — in
@@ -94,16 +94,28 @@ _LLM_STATE = {"fails": 0, "off_until": 0.0, "calls": 0}
 
 
 def _llm_key() -> str:
-    if LLM_PROVIDER == "openrouter":
-        return os.getenv("OPENROUTER_LLM_KEY", "") or os.getenv("OPENROUTER_API_KEY", "")
-    return os.getenv("DEEPSEEK_API_KEY", "")
+    key = (os.getenv("OPENROUTER_LLM_KEY", "")
+           or os.getenv("OPENROUTER_API_KEY", ""))
+    if not key:
+        try:
+            import local_store
+            key = str((local_store.get_setting("openrouter") or {}).get("api_key", "") or "")
+        except Exception:
+            pass
+    return key
 
 
 def _llm_model() -> str:
     if LLM_MODEL:
         return LLM_MODEL
-    return "~deepseek/deepseek-v4-flash-latest" if LLM_PROVIDER == "openrouter" \
-        else "deepseek-v4-flash"
+    try:
+        import local_store
+        m = str((local_store.get_setting("openrouter") or {}).get("model", "") or "")
+        if m:
+            return m
+    except Exception:
+        pass
+    return os.getenv("OPENROUTER_MODEL", "")
 
 
 def _extract_llm_json(text: str) -> dict:
@@ -167,25 +179,15 @@ def _llm_available() -> bool:
 def _llm_chat(prompt: str) -> str:
     """One chat call for the current provider. Returns the raw content text
     (reasoning included when the final answer is empty). Raises on error.
-    Robust: larger max_tokens (reasoning eats budget), truncated JSON repair."""
-    if LLM_PROVIDER == "openrouter":
-        body = {
-            "model": _llm_model(),
-            "messages": [{"role": "user", "content": prompt}],
-            "reasoning": {"enabled": True},
-            "max_tokens": 900,
-        }
-        url = "https://openrouter.ai/api/v1/chat/completions"
-    else:  # deepseek official API
-        body = {
-            "model": _llm_model(),
-            "messages": [{"role": "user", "content": prompt}],
-            "thinking": {"type": "enabled"},
-            "reasoning_effort": LLM_EFFORT,
-            "response_format": {"type": "json_object"},
-            "max_tokens": 800,
-        }
-        url = "https://api.deepseek.com/chat/completions"
+    Robust: larger max_tokens (reasoning eats budget), truncated JSON repair.
+    OpenRouter only (single provider in this build)."""
+    body = {
+        "model": _llm_model(),
+        "messages": [{"role": "user", "content": prompt}],
+        "reasoning": {"enabled": True},
+        "max_tokens": 900,
+    }
+    url = "https://openrouter.ai/api/v1/chat/completions"
     req = urllib.request.Request(
         url, data=json.dumps(body).encode(),
         headers={"Authorization": f"Bearer {_llm_key()}",

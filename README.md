@@ -54,7 +54,7 @@ Optional Buy Me a Coffee support (voluntary, no returns promised)
 3. Spawn a bot per symbol (mode `scalp`, comp OFF ≈ validated baseline).
 4. Tick `prop` for evaluation-style discipline (session/daily sit-outs, 0:00 UTC reset, DD governor). Weekend-flat applies either way.
 
-MT5: attach `ea/HybridGB_EA.mq5` to a chart, generate a token in Settings ▸ MT5, paste token + server URL into the EA inputs, allow WebRequest to your server URL.
+MT5: attach `ea/Ture_Bridge_EA.mq5` to a chart, generate a token in Settings ▸ MT5, paste token + server URL into the EA inputs, allow WebRequest to your server URL.
 
 ## Layout
 

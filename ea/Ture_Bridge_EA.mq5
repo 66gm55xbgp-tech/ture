@@ -1,6 +1,6 @@
 //+------------------------------------------------------------------+
-//| HybridGB_Bridge_EA.mq5                                           |
-//| Hybrid-GB MT5 Bridge EA v3.15                                    |
+//| Ture_Bridge_EA.mq5                                           |
+//| Ture MT5 Bridge EA v3.15                                    |
 //|                                                                  |
 //| Pull model (unchanged): on every tick the EA POSTs its state to  |
 //| ServerURL + "/state" and executes the command in the response.   |
@@ -33,7 +33,7 @@
 //|   flattens this chart locally. Also flattens on EA/chart/terminal|
 //|   stop. CLOSE_CHART closes any magic on the symbol.              |
 //+------------------------------------------------------------------+
-#property copyright "Hybrid-GB"
+#property copyright "Ture"
 #property version   "3.15"
 #property strict
 
@@ -42,7 +42,7 @@
 #include <Trade\OrderInfo.mqh>
 
 // -- Inputs --------------------------------------------------------
-input string  ServerURL    = "http://34.146.199.62:9100/api/mt5"; // Server URL (no slash at end)
+input string  ServerURL    = ""; // Server URL, e.g. http://YOUR-HOST:9100/api/mt5 (no slash at end). Paste from Dashboard > Settings > MT5.
 input string  AuthToken    = "";                            // MT5 token (Dashboard > Settings)
 input int     MagicNumber  = 888888;                        // Magic number
 input double  LotSize      = 0.01;                          // Fallback lot per order
@@ -76,7 +76,7 @@ ENUM_ORDER_TYPE_FILLING g_filling = ORDER_FILLING_IOC;
 void Log(string msg, bool force = false)
 {
    if(VerboseLog || force)
-      Print("[HybridGB][", g_symbol, "] ", msg);
+      Print("[Ture][", g_symbol, "] ", msg);
 }
 
 //+------------------------------------------------------------------+
@@ -96,7 +96,7 @@ int OnInit()
    _DetectFilling();
 
    Print("+==========================================+");
-   Print("|   HybridGB Bridge EA v3.15               |");
+   Print("|   Ture Bridge EA v3.15               |");
    Print("+------------------------------------------+");
    Print("| Symbol:  ", g_symbol);
    Print("| Server:  ", g_stateURL);
@@ -106,7 +106,7 @@ int OnInit()
    Print("[WARN] Add '", ServerURL, "' to: Tools > Options > Expert Advisors > Allow WebRequest");
 
    if(StringLen(AuthToken) == 0)
-      Print("[HybridGB] [FAIL] AuthToken is EMPTY - set it from Dashboard > Settings > MT5");
+      Print("[Ture] [FAIL] AuthToken is EMPTY - set it from Dashboard > Settings > MT5");
 
    EventSetTimer(1);
    g_lastOkMs = GetTickCount64();        // grace: don't flatten on a slow first POST
@@ -123,10 +123,10 @@ void OnDeinit(const int reason)
       || reason == REASON_CLOSE)
    {
       int n = _CloseChart();
-      Print("[HybridGB] EA stopping (reason=", reason,
+      Print("[Ture] EA stopping (reason=", reason,
             ") — closed/cancelled ", n, " on ", g_symbol);
    }
-   Print("[HybridGB] EA stopped (reason=", reason, ")");
+   Print("[Ture] EA stopped (reason=", reason, ")");
 }
 
 //+------------------------------------------------------------------+
@@ -253,9 +253,9 @@ void SendRegister()
    string response = "";
    int rc = _Post(g_registerURL, json, response);
    if(rc == 200)
-      Print("[HybridGB] registered [OK] (", listed, " symbols) -> ", response);
+      Print("[Ture] registered [OK] (", listed, " symbols) -> ", response);
    else if(rc == 401 || rc == 403)
-      Print("[HybridGB] [FAIL] register REJECTED (HTTP ", rc, ") - check AuthToken");
+      Print("[Ture] [FAIL] register REJECTED (HTTP ", rc, ") - check AuthToken");
    else
       Log("register failed HTTP " + (string)rc, true);
 }
@@ -377,7 +377,7 @@ void SendState()
    {
       int err = GetLastError();
       if(err == 4014)
-         Print("[HybridGB] [WARN] URL not in allowed list: ", g_stateURL,
+         Print("[Ture] [WARN] URL not in allowed list: ", g_stateURL,
                " -> Tools > Options > Expert Advisors > Allow WebRequest");
       else
          Log("POST failed err=" + (string)err, true);
@@ -386,7 +386,7 @@ void SendState()
    }
    if(rc == 401 || rc == 403)
    {
-      Print("[HybridGB] [FAIL] state REJECTED (HTTP ", rc, ") - AuthToken mismatch; re-registering");
+      Print("[Ture] [FAIL] state REJECTED (HTTP ", rc, ") - AuthToken mismatch; re-registering");
       SendRegister();
       _CheckServerLost();
       return;
@@ -434,7 +434,7 @@ void SendState()
    {
       int closed = _CloseAll();
       _QueueExec(cmdId, closed > 0 ? 10009 : 10013, 0);   // TRADE_RETCODE_DONE : not found
-      Print("[HybridGB] CLOSE_ALL -> closed ", closed);
+      Print("[Ture] CLOSE_ALL -> closed ", closed);
    }
    else if(action == "CLOSE_TICKET")
    {
@@ -451,19 +451,19 @@ void SendState()
          ok = Trade.OrderDelete((ulong)ticket);
       }
       _QueueExec(cmdId, ok ? 10009 : 10013, ticket);
-      if(!ok) Print("[HybridGB] CANCEL_TICKET ", ticket, " failed/not found");
+      if(!ok) Print("[Ture] CANCEL_TICKET ", ticket, " failed/not found");
    }
    else if(action == "CANCEL_ALL")
    {
       int c = _CancelAll();
       _QueueExec(cmdId, 10009, 0);
-      Print("[HybridGB] CANCEL_ALL -> cancelled ", c);
+      Print("[Ture] CANCEL_ALL -> cancelled ", c);
    }
    else if(action == "CLOSE_CHART")
    {
       int n = _CloseChart();
       _QueueExec(cmdId, n > 0 ? 10009 : 10013, 0);
-      Print("[HybridGB] CLOSE_CHART -> ", n, " closed/cancelled (any magic)");
+      Print("[Ture] CLOSE_CHART -> ", n, " closed/cancelled (any magic)");
    }
    // NOOP: nothing to do
 }
@@ -499,15 +499,15 @@ void _ExecMarket(ENUM_ORDER_TYPE orderType, double vol, double serverSL, string 
    }
 
    bool ok = Trade.PositionOpen(g_symbol, orderType, vol, price, sl, 0,
-                                "HybridGB " + cmdId);
+                                "Ture " + cmdId);
    long ticket = (long)Trade.ResultOrder();
    _QueueExec(cmdId, ok ? 10009 : (int)Trade.ResultRetcode(), ticket);
    if(ok)
-      Print("[HybridGB] OPENED ", EnumToString(orderType),
+      Print("[Ture] OPENED ", EnumToString(orderType),
             " lot=", DoubleToString(vol, 2), " @ ", DoubleToString(price, g_digits),
             " ticket=", ticket);
    else
-      Print("[HybridGB] OPEN FAILED retcode=", Trade.ResultRetcode(),
+      Print("[Ture] OPEN FAILED retcode=", Trade.ResultRetcode(),
             " ", Trade.ResultComment());
 }
 
@@ -528,16 +528,16 @@ void _ExecLimit(ENUM_ORDER_TYPE orderType, double vol, double price, string cmdI
    // a limit that does not fill immediately — Python logs success, MT5 shows nothing.
    Trade.SetTypeFilling(ORDER_FILLING_RETURN);
    bool ok = Trade.OrderOpen(g_symbol, orderType, vol, 0, price, 0, 0,
-                             ORDER_TIME_GTC, 0, "HybridGB " + cmdId);
+                             ORDER_TIME_GTC, 0, "Ture " + cmdId);
    Trade.SetTypeFilling(g_filling);
    long ticket = (long)Trade.ResultOrder();
    _QueueExec(cmdId, ok ? 10009 : (int)Trade.ResultRetcode(), ticket);
    if(ok)
-      Print("[HybridGB] LIMIT ", EnumToString(orderType), " lot=",
+      Print("[Ture] LIMIT ", EnumToString(orderType), " lot=",
             DoubleToString(vol, 2), " @ ", DoubleToString(price, g_digits),
             " ticket=", ticket);
    else
-      Print("[HybridGB] LIMIT FAILED retcode=", Trade.ResultRetcode(),
+      Print("[Ture] LIMIT FAILED retcode=", Trade.ResultRetcode(),
             " ", Trade.ResultComment());
 }
 
@@ -556,16 +556,16 @@ void _ExecStop(ENUM_ORDER_TYPE orderType, double vol, double price, string cmdId
 
    Trade.SetTypeFilling(ORDER_FILLING_RETURN);
    bool ok = Trade.OrderOpen(g_symbol, orderType, vol, 0, price, 0, 0,
-                             ORDER_TIME_GTC, 0, "HybridGB " + cmdId);
+                             ORDER_TIME_GTC, 0, "Ture " + cmdId);
    Trade.SetTypeFilling(g_filling);
    long ticket = (long)Trade.ResultOrder();
    _QueueExec(cmdId, ok ? 10009 : (int)Trade.ResultRetcode(), ticket);
    if(ok)
-      Print("[HybridGB] STOP ", EnumToString(orderType), " lot=",
+      Print("[Ture] STOP ", EnumToString(orderType), " lot=",
             DoubleToString(vol, 2), " @ ", DoubleToString(price, g_digits),
             " ticket=", ticket);
    else
-      Print("[HybridGB] STOP FAILED retcode=", Trade.ResultRetcode(),
+      Print("[Ture] STOP FAILED retcode=", Trade.ResultRetcode(),
             " ", Trade.ResultComment());
 }
 
@@ -641,7 +641,7 @@ void _CheckServerLost()
       return;
    g_lostFlat = true;
    int n = _CloseChart();
-   Print("[HybridGB] NO SERVER RESPONSE for ", lim,
+   Print("[Ture] NO SERVER RESPONSE for ", lim,
          "s — auto-closed ", n, " position(s)/order(s) on ", g_symbol,
          ". Flatten leftovers in MT5 if any remain.");
 }
@@ -659,13 +659,13 @@ bool _CloseTicket(long ticket)
 
       if(Trade.PositionClose((ulong)ticket))
       {
-         Print("[HybridGB] CLOSE_TICKET ", ticket, " -> OK");
+         Print("[Ture] CLOSE_TICKET ", ticket, " -> OK");
          return true;
       }
-      Print("[HybridGB] CLOSE_TICKET ", ticket, " FAILED ret=", Trade.ResultRetcode());
+      Print("[Ture] CLOSE_TICKET ", ticket, " FAILED ret=", Trade.ResultRetcode());
       return false;
    }
-   Print("[HybridGB] CLOSE_TICKET ", ticket, " not found (already closed?)");
+   Print("[Ture] CLOSE_TICKET ", ticket, " not found (already closed?)");
    return false;
 }
 
