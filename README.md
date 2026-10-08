@@ -95,3 +95,11 @@ Fills assume touch — live lands ~5–15% worse. Past replay ≠ future profit.
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## ☕ Support the Project
+
+If you find this project useful for learning, experimentation, or research, you can optionally support its continued development.
+
+[![Buy Me a Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20Me%20a%20Coffee&emoji=%E2%98%95&slug=gurumetta2q&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/gurumetta2q)
+
+Your support helps fund development, testing, documentation, and future open-source improvements.
